@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { MapContainer, TileLayer, GeoJSON, Marker, Popup, useMap, ZoomControl, CircleMarker } from "react-leaflet";
+import { MapContainer, TileLayer, GeoJSON, ZoomControl, useMap, Marker, Popup, Circle, CircleMarker } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
@@ -32,7 +32,9 @@ type BaseMapKey = keyof typeof BASE_MAPS;
 interface MapViewProps {
   layers: LayerConfig[];
   baseMap: BaseMapKey;
-  onFeatureClick?: (feature: GeoJSON.Feature) => void;
+  onFeatureClick: (feature: GeoJSON.Feature) => void;
+  zoomToExtentTrigger?: number;
+  locateMeTrigger?: number;
 }
 
 // Component to change base map dynamically
@@ -119,7 +121,43 @@ const USO_COLORS: Record<string, string> = {
   "Protección Ambiental": "#2ECC71",
 };
 
-export default function MapView({ layers, baseMap, onFeatureClick }: MapViewProps) {
+function MapController({ zoomToExtentTrigger, locateMeTrigger }: { zoomToExtentTrigger?: number; locateMeTrigger?: number }) {
+  const map = useMap();
+  const [userLocation, setUserLocation] = useState<L.LatLng | null>(null);
+
+  useEffect(() => {
+    if (zoomToExtentTrigger) {
+      map.setView(OCANA_CENTER, OCANA_ZOOM);
+    }
+  }, [zoomToExtentTrigger, map]);
+
+  useEffect(() => {
+    if (locateMeTrigger) {
+      map.locate({ setView: true, maxZoom: 16 });
+    }
+  }, [locateMeTrigger, map]);
+
+  useEffect(() => {
+    map.on("locationfound", (e) => {
+      setUserLocation(e.latlng);
+    });
+    // Clean up event listener on unmount
+    return () => {
+      map.off("locationfound");
+    };
+  }, [map]);
+
+  return userLocation ? (
+    <>
+      <Marker position={userLocation}>
+        <Popup>Te encuentras aquí</Popup>
+      </Marker>
+      <Circle center={userLocation} radius={100} pathOptions={{ color: '#0ea5e9', fillColor: '#0ea5e9', fillOpacity: 0.1 }} />
+    </>
+  ) : null;
+}
+
+export default function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateMeTrigger }: MapViewProps) {
   const visibleLayers = layers.filter(l => l.visible);
 
   const getStyle = (layerId: string, color: string, opacity: number) => {
@@ -169,6 +207,11 @@ export default function MapView({ layers, baseMap, onFeatureClick }: MapViewProp
     >
       <ZoomControl position="bottomright" />
       <BaseMapLayer baseMap={baseMap} />
+
+      <MapController
+        zoomToExtentTrigger={zoomToExtentTrigger}
+        locateMeTrigger={locateMeTrigger}
+      />
 
       {visibleLayers.map(layer => {
         const data = GEOJSON_MAP[layer.id];

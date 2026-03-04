@@ -6,7 +6,8 @@ import DashboardPanel from "@/components/gis/DashboardPanel";
 import MapToolbar from "@/components/gis/MapToolbar";
 import FeatureInfoPanel from "@/components/gis/FeatureInfoPanel";
 import LegendPanel from "@/components/gis/LegendPanel";
-import { LAYERS_CONFIG, LayerConfig } from "@/data/ocana-geodata";
+import { LAYERS_CONFIG, LayerConfig, OCANA_CENTER, OCANA_ZOOM } from "@/data/ocana-geodata";
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const [layers, setLayers] = useState<LayerConfig[]>(LAYERS_CONFIG);
@@ -14,6 +15,9 @@ const Index = () => {
   const [layersPanelOpen, setLayersPanelOpen] = useState(true);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState<GeoJSON.Feature | null>(null);
+  const [zoomTrigger, setZoomTrigger] = useState(0);
+  const [locateTrigger, setLocateTrigger] = useState(0);
+  const { toast } = useToast();
 
   const toggleLayer = useCallback((id: string) => {
     setLayers(prev => prev.map(l => l.id === id ? { ...l, visible: !l.visible } : l));
@@ -27,15 +31,47 @@ const Index = () => {
     setSelectedFeature(feature);
   }, []);
 
+  const handleZoomToExtent = useCallback(() => {
+    setZoomTrigger(prev => prev + 1);
+    toast({
+      title: "Extensión Total",
+      description: "Ajustando vista a los límites municipales de Ocaña.",
+    });
+  }, [toast]);
+
+  const handleLocateMe = useCallback(() => {
+    setLocateTrigger(prev => prev + 1);
+    toast({
+      title: "Ubicación",
+      description: "Buscando ubicación actual...",
+    });
+  }, [toast]);
+
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
+  const handleExport = useCallback(() => {
+    toast({
+      title: "Exportar Datos",
+      description: "Generando archivo CSV con la información de las capas activas...",
+    });
+  }, [toast]);
+
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-background">
-      <GISHeader />
+      <GISHeader onSearch={(q) => toast({ title: "Búsqueda", description: `Buscando: ${q}` })} />
 
       <div className="flex-1 relative">
         {/* Toolbar */}
         <MapToolbar
           onToggleLayers={() => setLayersPanelOpen(p => !p)}
           onToggleDashboard={() => setDashboardOpen(p => !p)}
+          onZoomToExtent={handleZoomToExtent}
+          onPrint={handlePrint}
+          onExport={handleExport}
+          onLocateMe={handleLocateMe}
+          onMeasure={() => toast({ title: "Herramienta de Medición", description: "Haga clic en el mapa para empezar a medir." })}
           layersOpen={layersPanelOpen}
           dashboardOpen={dashboardOpen}
         />
@@ -62,6 +98,8 @@ const Index = () => {
           layers={layers}
           baseMap={baseMap}
           onFeatureClick={handleFeatureClick}
+          zoomToExtentTrigger={zoomTrigger}
+          locateMeTrigger={locateTrigger}
         />
 
         {/* Feature Info */}
