@@ -35,6 +35,8 @@ interface MapViewProps {
   onFeatureClick: (feature: GeoJSON.Feature) => void;
   zoomToExtentTrigger?: number;
   locateMeTrigger?: number;
+  onZoomChange?: (zoom: number) => void;
+  onMouseMove?: (coords: { lat: number; lng: number }) => void;
 }
 
 // Component to change base map dynamically
@@ -78,8 +80,8 @@ function PointLayer({
                 <h3>{icon} {f.properties?.nombre}</h3>
                 {Object.entries(f.properties || {}).filter(([k]) => k !== "nombre").map(([k, v]) => (
                   <div className="attr-row" key={k}>
-                    <span className="attr-label">{k.replace(/_/g, " ")}</span>
-                    <span className="attr-value">{String(v)}</span>
+                    <span className="attr-label">{PROP_LABELS[k] ?? k.replace(/_/g, " ")}</span>
+                    <span className="attr-value">{v === null || v === undefined ? "—" : String(v)}</span>
                   </div>
                 ))}
               </div>
@@ -105,6 +107,17 @@ const GEOJSON_MAP: Record<string, GeoJSON.FeatureCollection> = {
 };
 
 const POINT_LAYERS = new Set(["educacion", "salud", "gobierno", "proyectos"]);
+
+const PROP_LABELS: Record<string, string> = {
+  tipo: "Tipo", nivel: "Nivel", camas: "Camas disponibles",
+  estudiantes: "Estudiantes matriculados", descripcion: "Descripción",
+  poblacion: "Población", area_habitantes: "Área (ha)",
+  estrato_predominante: "Estrato predominante", densidad: "Densidad (hab/ha)",
+  comuna: "Comuna", estrato: "Estrato", longitud_km: "Longitud (km)",
+  uso: "Uso del suelo", viviendas: "Viviendas", estado: "Estado",
+  presupuesto: "Presupuesto", avance: "Avance (%)", area: "Área",
+  direccion: "Dirección",
+};
 
 const ESTRATO_COLORS: Record<number, string> = {
   1: "#E74C3C",
@@ -157,7 +170,30 @@ function MapController({ zoomToExtentTrigger, locateMeTrigger }: { zoomToExtentT
   ) : null;
 }
 
-export default function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateMeTrigger }: MapViewProps) {
+function MapEventsTracker({
+  onZoomChange,
+  onMouseMove,
+}: {
+  onZoomChange?: (zoom: number) => void;
+  onMouseMove?: (coords: { lat: number; lng: number }) => void;
+}) {
+  const map = useMap();
+  useEffect(() => {
+    const handleZoom = () => onZoomChange?.(map.getZoom());
+    const handleMouseMove = (e: L.LeafletMouseEvent) =>
+      onMouseMove?.({ lat: e.latlng.lat, lng: e.latlng.lng });
+    map.on("zoomend", handleZoom);
+    map.on("mousemove", handleMouseMove);
+    onZoomChange?.(map.getZoom());
+    return () => {
+      map.off("zoomend", handleZoom);
+      map.off("mousemove", handleMouseMove);
+    };
+  }, [map, onZoomChange, onMouseMove]);
+  return null;
+}
+
+export default function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateMeTrigger, onZoomChange, onMouseMove }: MapViewProps) {
   const visibleLayers = layers.filter(l => l.visible);
 
   const getStyle = (layerId: string, color: string, opacity: number) => {
@@ -189,7 +225,9 @@ export default function MapView({ layers, baseMap, onFeatureClick, zoomToExtentT
       const props = feature.properties;
       let html = `<div class="custom-popup"><h3>${props.nombre || "Sin nombre"}</h3>`;
       Object.entries(props).filter(([k]) => k !== "nombre").forEach(([k, v]) => {
-        html += `<div class="attr-row"><span class="attr-label">${k.replace(/_/g, " ")}</span><span class="attr-value">${v}</span></div>`;
+        const label = PROP_LABELS[k] ?? k.replace(/_/g, " ");
+        const val = v === null || v === undefined ? "—" : String(v);
+        html += `<div class="attr-row"><span class="attr-label">${label}</span><span class="attr-value">${val}</span></div>`;
       });
       html += "</div>";
       (layer as L.Path).bindPopup(html);
@@ -205,13 +243,15 @@ export default function MapView({ layers, baseMap, onFeatureClick, zoomToExtentT
       className="w-full h-full"
       style={{ background: "#e8f0fe" }}
     >
-      <ZoomControl position="bottomright" />
+      <ZoomControl position="bottomleft" />
       <BaseMapLayer baseMap={baseMap} />
 
       <MapController
         zoomToExtentTrigger={zoomToExtentTrigger}
         locateMeTrigger={locateMeTrigger}
       />
+
+      <MapEventsTracker onZoomChange={onZoomChange} onMouseMove={onMouseMove} />
 
       {visibleLayers.map(layer => {
         const data = GEOJSON_MAP[layer.id];

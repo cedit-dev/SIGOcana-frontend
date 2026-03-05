@@ -1,12 +1,13 @@
 import { useState, useCallback } from "react";
 import GISHeader from "@/components/gis/GISHeader";
-import MapView, { BaseMapKey } from "@/components/gis/MapView";
+import MapView, { BaseMapKey, BASE_MAPS } from "@/components/gis/MapView";
 import LayerPanel from "@/components/gis/LayerPanel";
 import DashboardPanel from "@/components/gis/DashboardPanel";
 import MapToolbar from "@/components/gis/MapToolbar";
 import FeatureInfoPanel from "@/components/gis/FeatureInfoPanel";
 import LegendPanel from "@/components/gis/LegendPanel";
-import { LAYERS_CONFIG, LayerConfig, OCANA_CENTER, OCANA_ZOOM } from "@/data/ocana-geodata";
+import MapStatusBar from "@/components/gis/MapStatusBar";
+import { LAYERS_CONFIG, LayerConfig, OCANA_ZOOM } from "@/data/ocana-geodata";
 import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
@@ -17,6 +18,8 @@ const Index = () => {
   const [selectedFeature, setSelectedFeature] = useState<GeoJSON.Feature | null>(null);
   const [zoomTrigger, setZoomTrigger] = useState(0);
   const [locateTrigger, setLocateTrigger] = useState(0);
+  const [zoom, setZoom] = useState(OCANA_ZOOM);
+  const [mouseCoords, setMouseCoords] = useState<{ lat: number; lng: number } | null>(null);
   const { toast } = useToast();
 
   const toggleLayer = useCallback((id: string) => {
@@ -57,6 +60,8 @@ const Index = () => {
       description: "Generando archivo CSV con la información de las capas activas...",
     });
   }, [toast]);
+
+  const activeLayers = layers.filter(l => l.visible).length;
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-background">
@@ -100,6 +105,8 @@ const Index = () => {
           onFeatureClick={handleFeatureClick}
           zoomToExtentTrigger={zoomTrigger}
           locateMeTrigger={locateTrigger}
+          onZoomChange={setZoom}
+          onMouseMove={setMouseCoords}
         />
 
         {/* Feature Info */}
@@ -110,6 +117,15 @@ const Index = () => {
 
         {/* Legend */}
         <LegendPanel layers={layers} />
+
+        {/* Status Bar */}
+        <MapStatusBar
+          zoom={zoom}
+          coords={mouseCoords}
+          activeLayers={activeLayers}
+          totalLayers={layers.length}
+          baseMapName={BASE_MAPS[baseMap].name}
+        />
       </div>
     </div>
   );
