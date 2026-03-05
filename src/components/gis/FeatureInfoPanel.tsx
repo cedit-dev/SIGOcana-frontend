@@ -9,6 +9,28 @@ interface FeatureInfoPanelProps {
   onClose: () => void;
 }
 
+const PROPERTY_LABELS: Record<string, string> = {
+  tipo: "Tipo",
+  nivel: "Nivel",
+  camas: "Camas disponibles",
+  estudiantes: "Estudiantes matriculados",
+  descripcion: "Descripción",
+  poblacion: "Población",
+  area_habitantes: "Área (ha)",
+  estrato_predominante: "Estrato predominante",
+  densidad: "Densidad (hab/ha)",
+  comuna: "Comuna",
+  estrato: "Estrato socioeconómico",
+  longitud_km: "Longitud (km)",
+  uso: "Uso del suelo",
+  viviendas: "Viviendas",
+  estado: "Estado",
+  presupuesto: "Presupuesto",
+  avance: "Avance (%)",
+  area: "Área",
+  direccion: "Dirección",
+};
+
 export default function FeatureInfoPanel({ feature, onClose }: FeatureInfoPanelProps) {
   const { toast } = useToast();
 
@@ -30,55 +52,96 @@ export default function FeatureInfoPanel({ feature, onClose }: FeatureInfoPanelP
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 400, opacity: 0 }}
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className="absolute top-20 right-4 z-[1000] w-[380px] max-w-[90vw] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+          className="absolute top-20 right-4 z-[1000] w-[380px] max-w-[90vw] rounded-2xl overflow-hidden flex flex-col"
+          style={{
+            background: "rgba(255,255,255,0.92)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            border: "1px solid rgba(255,255,255,0.5)",
+            boxShadow: "0 12px 40px rgba(44, 30, 15, 0.12), 0 4px 12px rgba(44, 30, 15, 0.06)",
+          }}
         >
-          {/* Header with Background */}
-          <div className="bg-primary p-4 text-primary-foreground relative">
+          {/* Header */}
+          <div
+            className="p-4 text-white relative"
+            style={{
+              background: "linear-gradient(135deg, #4a7c59 0%, #3d6b4a 100%)",
+            }}
+          >
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-gis-green/20 flex items-center justify-center border border-gis-green/30">
-                  <Info className="w-4 h-4 text-gis-green" />
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center"
+                  style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)" }}
+                >
+                  <Info className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm tracking-tight leading-tight">
+                  <h3 className="font-bold text-sm tracking-tight leading-tight text-white">
                     {feature.properties?.nombre || "Atributos del Elemento"}
                   </h3>
-                  <p className="text-[10px] text-primary-foreground/60 font-medium uppercase tracking-wider mt-0.5">Información Detallada</p>
+                  <p className="text-[10px] text-white/60 font-medium uppercase tracking-wider mt-0.5">
+                    Información Detallada
+                  </p>
                 </div>
               </div>
-              <button onClick={onClose} className="p-1 rounded-lg hover:bg-white/10 transition-colors">
-                <X className="w-4 h-4 text-primary-foreground/70" />
+              <button
+                onClick={onClose}
+                className="p-1 rounded-lg hover:bg-white/15 transition-colors"
+              >
+                <X className="w-4 h-4 text-white/70" />
               </button>
             </div>
           </div>
 
           <div className="p-5 flex-1 overflow-y-auto custom-scrollbar">
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {Object.entries(feature.properties || {})
                 .filter(([k]) => k !== "nombre")
                 .map(([key, value]) => (
-                  <div key={key} className="group flex flex-col py-2.5 border-b border-border/40 last:border-0 hover:bg-muted/30 px-2 rounded-lg transition-colors">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">{key.replace(/_/g, " ")}</span>
-                    <span className="text-[13px] font-semibold text-foreground break-words">{String(value)}</span>
+                  <div
+                    key={key}
+                    className="group flex flex-col py-2.5 border-b last:border-0 hover:bg-[#4a7c59]/4 px-2 rounded-lg transition-colors"
+                    style={{ borderColor: "rgba(0,0,0,0.05)" }}
+                  >
+                    <span className="text-[10px] font-bold text-[#8b7d6b] uppercase tracking-wider mb-0.5">
+                      {PROPERTY_LABELS[key] ?? key.replace(/_/g, " ")}
+                    </span>
+                    <span className="text-[13px] font-semibold text-[#2c1e0f] break-words">
+                      {value === null || value === undefined ? "—" : String(value)}
+                    </span>
                   </div>
                 ))}
             </div>
 
             {(!feature.properties || Object.keys(feature.properties).length <= 1) && (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
-                  <MapIcon className="w-6 h-6 text-muted-foreground/40" />
+                <div className="w-12 h-12 rounded-full bg-[#f5f0e8] flex items-center justify-center mb-3">
+                  <MapIcon className="w-6 h-6 text-[#8b7d6b]/40" />
                 </div>
-                <p className="text-xs text-muted-foreground font-medium">No se encontraron atributos adicionales para este elemento.</p>
+                <p className="text-xs text-[#8b7d6b] font-medium">
+                  No se encontraron atributos adicionales.
+                </p>
               </div>
             )}
           </div>
 
-          {/* Footer Actions */}
-          <div className="p-3 border-t border-border bg-muted/30 flex items-center justify-end gap-2">
+          {/* Footer */}
+          <div
+            className="p-3 flex items-center justify-end gap-2"
+            style={{
+              borderTop: "1px solid rgba(0,0,0,0.05)",
+              background: "rgba(0,0,0,0.02)",
+            }}
+          >
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="w-9 h-9 rounded-xl" onClick={handleCopy}>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="w-9 h-9 rounded-xl border-[#e8dfd4] text-[#8b7d6b] hover:text-[#2c1e0f] hover:border-[#4a7c59]/30"
+                  onClick={handleCopy}
+                >
                   <Copy className="w-3.5 h-3.5" />
                 </Button>
               </TooltipTrigger>
@@ -87,14 +150,21 @@ export default function FeatureInfoPanel({ feature, onClose }: FeatureInfoPanelP
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="w-9 h-9 rounded-xl">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="w-9 h-9 rounded-xl border-[#e8dfd4] text-[#8b7d6b] hover:text-[#2c1e0f] hover:border-[#4a7c59]/30"
+                >
                   <Share2 className="w-3.5 h-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Compartir</TooltipContent>
             </Tooltip>
 
-            <Button className="h-9 px-4 rounded-xl text-xs font-bold bg-gis-green hover:bg-gis-green-light">
+            <Button
+              className="h-9 px-4 rounded-xl text-xs font-bold text-white"
+              style={{ background: "linear-gradient(135deg, #4a7c59, #5d9a6e)" }}
+            >
               Ver Reporte
             </Button>
           </div>
