@@ -1,14 +1,24 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Eye, EyeOff, MapPin, ArrowLeft } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { Eye, EyeOff, ArrowLeft, Map, Lock, Mail } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import AnimatedBackground from "@/components/landing/AnimatedBackground";
+
+// ─── Floating gradient orbs (same palette as landing page) ─────────────────
+const ORBS = [
+    { w: 480, h: 480, top: "-10%", left: "-8%", from: "#4a7c59", to: "#2d8a6e", delay: 0 },
+    { w: 380, h: 380, top: "55%", left: "65%", from: "#d4a96a", to: "#c0875a", delay: 1.4 },
+    { w: 320, h: 320, top: "10%", left: "70%", from: "#4a7c59", to: "#5d9a6e", delay: 0.7 },
+];
 
 export default function Login() {
     const navigate = useNavigate();
     const { toast } = useToast();
+    const reduceMotion = useReducedMotion();
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -27,188 +37,289 @@ export default function Login() {
         }, 1200);
     };
 
+    const enterT = reduceMotion
+        ? { duration: 0 }
+        : { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const };
+
     return (
         <div
             className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden"
-            style={{ background: "#F5F5F0" }}
+            style={{ background: "linear-gradient(135deg, #f0ebe1 0%, #e8ded0 50%, #edf2ec 100%)" }}
         >
-            {/* Decorative blurred shapes */}
-            <div
-                className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full opacity-30"
-                style={{ background: "radial-gradient(circle, rgba(74,124,89,0.25) 0%, transparent 70%)" }}
-            />
-            <div
-                className="absolute bottom-[-15%] right-[-5%] w-[400px] h-[400px] rounded-full opacity-25"
-                style={{ background: "radial-gradient(circle, rgba(196,148,90,0.3) 0%, transparent 70%)" }}
-            />
+            {/* ── Animated map-pin background (same as Hero) ── */}
+            <AnimatedBackground />
 
-            {/* Back button */}
+            {/* ── Floating glowing orbs ── */}
+            {ORBS.map((orb, i) => (
+                <motion.div
+                    key={i}
+                    aria-hidden="true"
+                    className="absolute rounded-full pointer-events-none"
+                    style={{
+                        width: orb.w,
+                        height: orb.h,
+                        top: orb.top,
+                        left: orb.left,
+                        background: `radial-gradient(circle, ${orb.from}22, ${orb.to}08)`,
+                        filter: "blur(60px)",
+                    }}
+                    animate={reduceMotion ? {} : { scale: [1, 1.08, 1], opacity: [0.7, 1, 0.7] }}
+                    transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: orb.delay }}
+                />
+            ))}
+
+            {/* ── Back button ── */}
             <motion.button
-                initial={{ opacity: 0, x: -10 }}
+                initial={{ opacity: 0, x: -12 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
+                transition={{ ...enterT, delay: 0.1 }}
                 onClick={() => navigate(-1)}
-                className="absolute top-6 left-6 flex items-center gap-2 text-[13px] font-semibold text-[#888] hover:text-[#2a2a2a] transition-colors z-10"
+                className="absolute top-6 left-6 flex items-center gap-2 text-[13px] font-semibold text-[#6b5b4e] hover:text-[#4a7c59] transition-colors z-20 group"
             >
-                <ArrowLeft className="w-4 h-4" />
+                <span className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/60 backdrop-blur-sm border border-white/50 group-hover:bg-[#4a7c59]/10 group-hover:border-[#4a7c59]/20 transition-all">
+                    <ArrowLeft className="w-4 h-4" />
+                </span>
                 Volver
             </motion.button>
 
-            {/* Login Card */}
+            {/* ── Login Card ── */}
             <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.97 }}
+                initial={{ opacity: 0, y: 24, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="w-full max-w-[420px] rounded-3xl overflow-hidden"
-                style={{
-                    background: "rgba(255, 255, 255, 0.82)",
-                    backdropFilter: "blur(24px) saturate(1.4)",
-                    WebkitBackdropFilter: "blur(24px) saturate(1.4)",
-                    border: "1px solid rgba(0,0,0,0.06)",
-                    boxShadow: "0 20px 60px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.03)",
-                }}
+                transition={{ ...enterT, delay: 0.15 }}
+                className="relative z-10 w-full max-w-[440px]"
             >
-                {/* Header */}
-                <div className="pt-10 pb-6 px-8 text-center">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.15, duration: 0.4 }}
-                        className="flex justify-center mb-5"
-                    >
-                        <img
-                            src="/sigocana-logo.png"
-                            alt="SigOcaña"
-                            className="w-24 h-24 rounded-3xl object-cover shadow-lg"
-                        />
-                    </motion.div>
-                    <h1 className="text-[22px] font-extrabold text-[#2a2a2a] tracking-tight">
-                        Iniciar Sesión
-                    </h1>
-                    <p className="text-[13px] text-[#999] mt-1.5 font-medium">
-                        Accede al Sistema de Información Geográfica de Ocaña
-                    </p>
-                </div>
+                {/* Top accent bar */}
+                <div className="h-1 rounded-t-3xl" style={{ background: "linear-gradient(90deg, #d4a96a 0%, #c4945a 40%, #4a7c59 100%)" }} />
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-4">
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold uppercase tracking-wider text-[#888]">
-                            Correo electrónico
-                        </label>
-                        <Input
-                            type="email"
-                            placeholder="usuario@alcaldia.gov.co"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            required
-                            className="h-11 rounded-xl border-0 text-[14px] font-medium text-[#2a2a2a] placeholder:text-[#bbb] focus-visible:ring-[#4a7c59]/30"
-                            style={{ background: "rgba(0,0,0,0.03)" }}
-                        />
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold uppercase tracking-wider text-[#888]">
-                            Contraseña
-                        </label>
-                        <div className="relative">
-                            <Input
-                                type={showPassword ? "text" : "password"}
-                                placeholder="••••••••"
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                                required
-                                className="h-11 rounded-xl border-0 pr-10 text-[14px] font-medium text-[#2a2a2a] placeholder:text-[#bbb] focus-visible:ring-[#4a7c59]/30"
-                                style={{ background: "rgba(0,0,0,0.03)" }}
+                <div
+                    className="rounded-b-3xl overflow-hidden"
+                    style={{
+                        background: "rgba(245, 241, 235, 0.88)",
+                        backdropFilter: "blur(28px) saturate(1.5)",
+                        WebkitBackdropFilter: "blur(28px) saturate(1.5)",
+                        border: "1px solid rgba(210, 200, 185, 0.55)",
+                        borderTop: "none",
+                        boxShadow: "0 24px 64px rgba(44,30,15,0.10), 0 4px 16px rgba(44,30,15,0.05)",
+                    }}
+                >
+                    {/* ── Header ── */}
+                    <div className="pt-10 pb-6 px-8 text-center">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.85 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ ...enterT, delay: 0.25 }}
+                            className="flex justify-center mb-5"
+                        >
+                            <img
+                                src="/sigocana-logo.png"
+                                alt="SigOcaña"
+                                className="w-20 h-20 rounded-2xl object-cover shadow-lg"
+                                style={{
+                                    boxShadow: "0 8px 24px rgba(74,124,89,0.30)",
+                                }}
                             />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#bbb] hover:text-[#666] transition-colors"
-                            >
-                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
-                        </div>
-                    </div>
+                        </motion.div>
 
-                    <div className="flex items-center justify-between pt-1">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                className="w-4 h-4 rounded border-[#ddd] text-[#4a7c59] accent-[#4a7c59] cursor-pointer"
-                            />
-                            <span className="text-[12px] font-medium text-[#888]">Recordarme</span>
-                        </label>
-                        <button type="button" className="text-[12px] font-semibold text-[#4a7c59] hover:underline">
-                            ¿Olvidaste tu contraseña?
-                        </button>
-                    </div>
-
-                    <Button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full h-11 rounded-xl text-[14px] font-bold text-white transition-all disabled:opacity-70"
-                        style={{
-                            background: "linear-gradient(135deg, #4a7c59 0%, #5d9a6e 100%)",
-                            boxShadow: "0 4px 12px rgba(74,124,89,0.25)",
-                        }}
-                    >
-                        {loading ? (
-                            <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
-                                className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
-                            />
-                        ) : (
-                            "Ingresar"
-                        )}
-                    </Button>
-
-                    <div className="relative py-3">
-                        <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t" style={{ borderColor: "rgba(0,0,0,0.06)" }} />
-                        </div>
-                        <div className="relative flex justify-center text-[10px]">
-                            <span className="px-3 font-semibold uppercase tracking-wider text-[#bbb]" style={{ background: "rgba(255,255,255,0.82)" }}>
-                                o continuar con
+                        {/* Badge */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ ...enterT, delay: 0.3 }}
+                            className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full mb-3"
+                            style={{ background: "rgba(74,124,89,0.10)", border: "1px solid rgba(74,124,89,0.20)" }}
+                        >
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#4a7c59] animate-pulse" />
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#4a7c59]">
+                                Sistema GIS · Ocaña
                             </span>
-                        </div>
+                        </motion.div>
+
+                        <motion.h1
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ ...enterT, delay: 0.35 }}
+                            className="text-[24px] font-black tracking-tight text-[#2c1e0f]"
+                        >
+                            Iniciar Sesión
+                        </motion.h1>
+                        <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ ...enterT, delay: 0.4 }}
+                            className="text-[13px] text-[#8b7d6b] mt-1 font-medium leading-snug"
+                        >
+                            Accede al Sistema de Información<br />Geográfica de Ocaña
+                        </motion.p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="h-10 rounded-xl border-0 text-[12px] font-semibold text-[#666] hover:text-[#2a2a2a]"
-                            style={{ background: "rgba(0,0,0,0.03)" }}
-                        >
-                            Google
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="h-10 rounded-xl border-0 text-[12px] font-semibold text-[#666] hover:text-[#2a2a2a]"
-                            style={{ background: "rgba(0,0,0,0.03)" }}
-                        >
-                            Microsoft
-                        </Button>
-                    </div>
-                </form>
+                    {/* ── Form ── */}
+                    <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-4">
 
-                {/* Footer */}
-                <div className="px-8 pb-6 text-center">
-                    <p className="text-[12px] text-[#999]">
-                        ¿No tienes cuenta?{" "}
-                        <button className="font-bold text-[#4a7c59] hover:underline">
-                            Solicitar acceso
-                        </button>
-                    </p>
+                        {/* Email */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ ...enterT, delay: 0.42 }}
+                            className="space-y-1.5"
+                        >
+                            <label className="text-[11px] font-bold uppercase tracking-wider text-[#8b7d6b] flex items-center gap-1.5">
+                                <Mail className="w-3 h-3" />
+                                Correo electrónico
+                            </label>
+                            <Input
+                                type="email"
+                                placeholder="usuario@alcaldia.gov.co"
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                                required
+                                autoComplete="email"
+                                className="h-11 rounded-xl text-[14px] font-medium text-[#2c1e0f] placeholder:text-[#c4b8a8] focus-visible:ring-[#4a7c59]/30"
+                                style={{ background: "rgba(255,255,255,0.55)", border: "1px solid rgba(210,200,185,0.6)" }}
+                            />
+                        </motion.div>
+
+                        {/* Password */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ ...enterT, delay: 0.47 }}
+                            className="space-y-1.5"
+                        >
+                            <label className="text-[11px] font-bold uppercase tracking-wider text-[#8b7d6b] flex items-center gap-1.5">
+                                <Lock className="w-3 h-3" />
+                                Contraseña
+                            </label>
+                            <div className="relative">
+                                <Input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={e => setPassword(e.target.value)}
+                                    required
+                                    autoComplete="current-password"
+                                    className="h-11 rounded-xl pr-10 text-[14px] font-medium text-[#2c1e0f] placeholder:text-[#c4b8a8] focus-visible:ring-[#4a7c59]/30"
+                                    style={{ background: "rgba(255,255,255,0.55)", border: "1px solid rgba(210,200,185,0.6)" }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#c4b8a8] hover:text-[#6b5b4e] transition-colors"
+                                >
+                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                            </div>
+                        </motion.div>
+
+                        {/* Remember / Forgot */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ ...enterT, delay: 0.51 }}
+                            className="flex items-center justify-between"
+                        >
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="w-4 h-4 rounded border-[#d4c8b8] accent-[#4a7c59] cursor-pointer"
+                                />
+                                <span className="text-[12px] font-medium text-[#8b7d6b]">Recordarme</span>
+                            </label>
+                            <button type="button" className="text-[12px] font-semibold text-[#4a7c59] hover:underline underline-offset-2">
+                                ¿Olvidaste tu contraseña?
+                            </button>
+                        </motion.div>
+
+                        {/* Submit */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ ...enterT, delay: 0.55 }}
+                        >
+                            <motion.button
+                                type="submit"
+                                disabled={loading}
+                                whileHover={!loading ? { scale: 1.02, y: -1 } : {}}
+                                whileTap={!loading ? { scale: 0.98 } : {}}
+                                className="w-full h-12 rounded-xl text-[14px] font-bold text-white flex items-center justify-center gap-2 transition-opacity disabled:opacity-70 cursor-pointer"
+                                style={{
+                                    background: "linear-gradient(135deg, #4a7c59 0%, #5d9a6e 100%)",
+                                    boxShadow: "0 4px 16px rgba(74,124,89,0.30)",
+                                }}
+                            >
+                                {loading ? (
+                                    <motion.div
+                                        animate={{ rotate: 360 }}
+                                        transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+                                        className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                                    />
+                                ) : (
+                                    <>
+                                        Ingresar al Sistema
+                                        <Map className="w-4 h-4" />
+                                    </>
+                                )}
+                            </motion.button>
+                        </motion.div>
+
+                        {/* Divider */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ ...enterT, delay: 0.58 }}
+                            className="relative py-1"
+                        >
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t" style={{ borderColor: "rgba(210,200,185,0.5)" }} />
+                            </div>
+                            <div className="relative flex justify-center text-[10px]">
+                                <span className="px-3 font-semibold uppercase tracking-wider text-[#c4b8a8]"
+                                    style={{ background: "rgba(245,241,235,0.0)" }}>
+                                    o continuar con
+                                </span>
+                            </div>
+                        </motion.div>
+
+                        {/* OAuth buttons */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ ...enterT, delay: 0.6 }}
+                            className="grid grid-cols-2 gap-3"
+                        >
+                            {["Google", "Microsoft"].map((provider) => (
+                                <motion.button
+                                    key={provider}
+                                    type="button"
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    className="h-10 rounded-xl text-[12px] font-semibold text-[#6b5b4e] hover:text-[#2c1e0f] transition-all cursor-pointer"
+                                    style={{
+                                        background: "rgba(255,255,255,0.55)",
+                                        border: "1px solid rgba(210,200,185,0.6)",
+                                    }}
+                                >
+                                    {provider}
+                                </motion.button>
+                            ))}
+                        </motion.div>
+                    </form>
+
+                    {/* Footer */}
+                    <div className="px-8 pb-7 text-center">
+                        <p className="text-[12px] text-[#8b7d6b]">
+                            ¿No tienes cuenta?{" "}
+                            <button className="font-bold text-[#4a7c59] hover:underline underline-offset-2">
+                                Solicitar acceso
+                            </button>
+                        </p>
+                    </div>
                 </div>
             </motion.div>
 
-            {/* Footer line */}
-            <div className="absolute bottom-4 text-center w-full">
-                <p className="text-[10px] text-[#bbb] font-medium">
+            {/* ── Bottom copyright ── */}
+            <div className="absolute bottom-4 text-center w-full z-10">
+                <p className="text-[10px] text-[#b4a898] font-medium">
                     © 2025 Alcaldía de Ocaña · Norte de Santander, Colombia
                 </p>
             </div>

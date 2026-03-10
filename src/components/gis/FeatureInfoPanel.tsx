@@ -54,10 +54,10 @@ export default function FeatureInfoPanel({ feature, onClose }: FeatureInfoPanelP
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
           className="absolute top-20 right-4 z-[1000] w-[380px] max-w-[90vw] rounded-2xl overflow-hidden flex flex-col"
           style={{
-            background: "rgba(255,255,255,0.92)",
+            background: "rgba(235,228,218,0.95)",
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
-            border: "1px solid rgba(255,255,255,0.5)",
+            border: "1px solid rgba(180,170,155,0.4)",
             boxShadow: "0 12px 40px rgba(44, 30, 15, 0.12), 0 4px 12px rgba(44, 30, 15, 0.06)",
           }}
         >

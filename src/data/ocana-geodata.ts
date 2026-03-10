@@ -56,7 +56,7 @@ export const LAYERS_CONFIG: LayerConfig[] = [
   { id: "uso_suelo", name: "Usos del suelo", icon: "TreePine", color: "#27AE60", category: "ordenamiento", visible: false, opacity: 0.3, description: "Clasificación del uso del suelo" },
   { id: "cartografia_basica", name: "Cartografía básica", icon: "Map", color: "#7F8C8D", category: "ordenamiento", visible: false, opacity: 0.7, description: "Cartografía de referencia" },
   { id: "curvas_nivel", name: "Curvas de nivel", icon: "Mountain", color: "#A0522D", category: "ordenamiento", visible: false, opacity: 0.7, description: "Curvas de nivel topográficas" },
-  { id: "comunas", name: "Comunas", icon: "Layout", color: "#4A90D9", category: "ordenamiento", visible: true, opacity: 0.4, description: "División por comunas del municipio" },
+  { id: "comunas", name: "Comunas", icon: "Layout", color: "#4A90D9", category: "ordenamiento", visible: false, opacity: 0.4, description: "División por comunas del municipio" },
   { id: "areas_inundables", name: "Áreas inundables en zona urbana", icon: "Waves", color: "#1F618D", category: "ordenamiento", visible: false, opacity: 0.7, description: "Zonas con riesgo de inundación" },
   { id: "amenaza_masa", name: "Zonas de amenaza por movimientos en masa", icon: "AlertTriangle", color: "#E74C3C", category: "ordenamiento", visible: false, opacity: 0.7, description: "Zonas con riesgo de deslizamiento" },
   { id: "base_catastral", name: "Base de datos catastral", icon: "Database", color: "#8E44AD", category: "ordenamiento", visible: false, opacity: 0.7, description: "Información catastral del municipio" },
@@ -117,7 +117,7 @@ export const LAYERS_CONFIG: LayerConfig[] = [
   { id: "museos", name: "Museos", icon: "Building2", color: "#6C3483", category: "cultura", visible: false, opacity: 0.7, description: "Museos y galerías de arte" },
 
   // ── EDUCACIÓN ──
-  { id: "educacion", name: "Instituciones educativas preescolar, básica y media", icon: "GraduationCap", color: "#2ECC71", category: "educacion_cat", visible: true, opacity: 1, description: "Colegios y escuelas" },
+  { id: "educacion", name: "Instituciones educativas preescolar, básica y media", icon: "GraduationCap", color: "#2ECC71", category: "educacion_cat", visible: false, opacity: 1, description: "Colegios y escuelas" },
   { id: "educacion_superior", name: "Instituciones de educación superior", icon: "GraduationCap", color: "#1ABC9C", category: "educacion_cat", visible: false, opacity: 0.7, description: "Universidades e instituciones superiores" },
   { id: "formacion_tecnica", name: "Entidades de formación técnica y tecnológica", icon: "Wrench", color: "#E67E22", category: "educacion_cat", visible: false, opacity: 0.7, description: "SENA y entidades técnicas" },
   { id: "desercion_escolar", name: "Tasa de deserción escolar", icon: "TrendingDown", color: "#E74C3C", category: "educacion_cat", visible: false, opacity: 0.7, description: "Tasas de deserción por zona" },
@@ -125,7 +125,7 @@ export const LAYERS_CONFIG: LayerConfig[] = [
   { id: "alimentacion_escolar", name: "Beneficiarios de alimentación escolar", icon: "UtensilsCrossed", color: "#27AE60", category: "educacion_cat", visible: false, opacity: 0.7, description: "Cobertura de alimentación escolar" },
 
   // ── SALUD Y PROTECCIÓN SOCIAL ──
-  { id: "salud", name: "Instituciones prestadoras de salud", icon: "Hospital", color: "#E74C3C", category: "salud_cat", visible: true, opacity: 1, description: "Hospitales, clínicas y puestos de salud" },
+  { id: "salud", name: "Instituciones prestadoras de salud", icon: "Hospital", color: "#E74C3C", category: "salud_cat", visible: false, opacity: 1, description: "Hospitales, clínicas y puestos de salud" },
   { id: "eps", name: "Empresas prestadoras de servicio", icon: "Heart", color: "#C0392B", category: "salud_cat", visible: false, opacity: 0.7, description: "EPS y aseguradoras de salud" },
   { id: "farmacias", name: "Establecimientos farmacéuticos", icon: "Pill", color: "#2ECC71", category: "salud_cat", visible: false, opacity: 0.7, description: "Farmacias y droguerías" },
   { id: "distribuidoras_medicamentos", name: "Distribuidoras de medicamentos", icon: "Package", color: "#3498DB", category: "salud_cat", visible: false, opacity: 0.7, description: "Distribuidoras farmacéuticas" },
@@ -161,7 +161,7 @@ export const LAYERS_CONFIG: LayerConfig[] = [
   { id: "cuadrantes_policia", name: "Cuadrantes de policía", icon: "Shield", color: "#2C3E50", category: "seguridad", visible: false, opacity: 0.7, description: "División policial por cuadrantes" },
 
   // ── FUNCIÓN PÚBLICA ──
-  { id: "gobierno", name: "Equipamientos y Sedes Gubernamentales", icon: "Landmark", color: "#F39C12", category: "funcion_publica", visible: true, opacity: 1, description: "Alcaldía, Catedral, Terminal y sedes institucionales" },
+  { id: "gobierno", name: "Equipamientos y Sedes Gubernamentales", icon: "Landmark", color: "#F39C12", category: "funcion_publica", visible: false, opacity: 1, description: "Alcaldía, Catedral, Terminal y sedes institucionales" },
   { id: "notarias", name: "Notarías", icon: "FileText", color: "#2C3E50", category: "funcion_publica", visible: false, opacity: 0.7, description: "Notarías públicas" },
   { id: "concejos", name: "Concejos municipales", icon: "Users", color: "#3498DB", category: "funcion_publica", visible: false, opacity: 0.7, description: "Sede del concejo municipal" },
   { id: "personerias", name: "Personerías municipales", icon: "Scale", color: "#27AE60", category: "funcion_publica", visible: false, opacity: 0.7, description: "Personería municipal" },
@@ -536,30 +536,30 @@ export const dashboardStats = {
     cultural: 6,
   },
   poblacionPorComuna: [
-    { comuna: "1 · Centro JE Caro",    poblacion: 30722, area: 85  },
-    { comuna: "2 · Norte",             poblacion: 25872, area: 120 },
-    { comuna: "3 · Sur Oriental O.H.", poblacion: 37393, area: 95  },
-    { comuna: "4 · Sur Occ. A.Milanés",poblacion: 19808, area: 150 },
-    { comuna: "5 · La Costa",          poblacion: 22632, area: 110 },
+    { comuna: "1 · Centro JE Caro", poblacion: 30722, area: 85 },
+    { comuna: "2 · Norte", poblacion: 25872, area: 120 },
+    { comuna: "3 · Sur Oriental O.H.", poblacion: 37393, area: 95 },
+    { comuna: "4 · Sur Occ. A.Milanés", poblacion: 19808, area: 150 },
+    { comuna: "5 · La Costa", poblacion: 22632, area: 110 },
   ],
   estratificacion: [
     { estrato: "Estrato 1", porcentaje: 32, viviendas: 8200 },
     { estrato: "Estrato 2", porcentaje: 35, viviendas: 9100 },
     { estrato: "Estrato 3", porcentaje: 22, viviendas: 5600 },
-    { estrato: "Estrato 4", porcentaje: 8,  viviendas: 2100 },
-    { estrato: "Estrato 5", porcentaje: 2,  viviendas: 500  },
-    { estrato: "Estrato 6", porcentaje: 1,  viviendas: 200  },
+    { estrato: "Estrato 4", porcentaje: 8, viviendas: 2100 },
+    { estrato: "Estrato 5", porcentaje: 2, viviendas: 500 },
+    { estrato: "Estrato 6", porcentaje: 1, viviendas: 200 },
   ],
   usoSuelo: [
-    { uso: "Urbano",     area: 696   },
-    { uso: "Agrícola",   area: 42000 },
+    { uso: "Urbano", area: 696 },
+    { uso: "Agrícola", area: 42000 },
     { uso: "Protección", area: 24531 },
   ],
   poblacionPorEdad: [
-    { grupo: "Niños (<12)",           cantidad: 24226, porcentaje: 17.8 },
-    { grupo: "Adolescentes (12-17)",  cantidad: 13488, porcentaje: 9.9  },
-    { grupo: "Adultos (18-59)",       cantidad: 79921, porcentaje: 58.6 },
-    { grupo: "Adultos ≥60",           cantidad: 18792, porcentaje: 13.8 },
+    { grupo: "Niños (<12)", cantidad: 24226, porcentaje: 17.8 },
+    { grupo: "Adolescentes (12-17)", cantidad: 13488, porcentaje: 9.9 },
+    { grupo: "Adultos (18-59)", cantidad: 79921, porcentaje: 58.6 },
+    { grupo: "Adultos ≥60", cantidad: 18792, porcentaje: 13.8 },
   ],
   distribucionGenero: [
     { genero: "Mujeres", cantidad: 70999, porcentaje: 52 },

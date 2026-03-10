@@ -1,5 +1,6 @@
 import { Database, RefreshCw, Target, Handshake, Cpu, Users } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, useInView } from "framer-motion";
+import { useRef } from "react";
 
 const OBJECTIVES = [
     {
@@ -42,17 +43,19 @@ const OBJECTIVES = [
 
 export default function ObjectivesSection() {
     const reduceMotion = useReducedMotion();
+    const sectionRef = useRef(null);
+    const isVisible = useInView(sectionRef, { once: true, margin: "-100px" });
+
     const transition = reduceMotion
         ? { duration: 0 }
-        : { duration: 0.5, ease: [0.22, 1, 0.36, 1] };
+        : { duration: 1.0, ease: [0.22, 1, 0.36, 1], type: "tween" as const };
 
     return (
-        <section id="objetivos" className="py-24 bg-white">
+        <section id="objetivos" className="py-24 bg-white" ref={sectionRef}>
             <div className="max-w-7xl mx-auto px-6">
                 <motion.div
-                    initial={reduceMotion ? {} : { opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-80px" }}
+                    initial={{ opacity: 0, y: 60, scale: 0.85, filter: "blur(8px)" }}
+                    animate={isVisible ? { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" } : { opacity: 0, y: 60, scale: 0.85, filter: "blur(8px)" }}
                     transition={transition}
                     className="text-center mb-16"
                 >
@@ -71,9 +74,8 @@ export default function ObjectivesSection() {
                     {OBJECTIVES.map((obj, i) => (
                         <motion.div
                             key={obj.title}
-                            initial={reduceMotion ? {} : { opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, margin: "-60px" }}
+                            initial={{ opacity: 0, y: 60, scale: 0.8, rotate: -3, filter: "blur(10px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
+                            animate={isVisible ? { opacity: 1, y: 0, scale: 1, rotate: 0, filter: "blur(0px)", boxShadow: "0 10px 25px rgba(0,0,0,0.1)" } : { opacity: 0, y: 60, scale: 0.8, rotate: -3, filter: "blur(10px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
                             transition={{ ...transition, delay: i * 0.05 }}
                             className="group bg-[#faf7f2] border border-[#e8dfd4] rounded-2xl p-7 cursor-pointer hover:shadow-xl hover:shadow-[#3d2e1e]/5 hover:-translate-y-1 transition-all duration-200"
                         >

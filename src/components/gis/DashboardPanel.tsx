@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Users, MapPin, Building2, TrendingUp, TreePine } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { dashboardStats } from "@/data/ocana-geodata";
+import CountUp from "@/components/CountUp";
 
 interface DashboardPanelProps {
   isOpen: boolean;
@@ -341,8 +342,16 @@ function StatCard({
   subValue?: string;
   color: string;
 }) {
+  // Extract numeric part from value for animation
+  const numericMatch = value.match(/(\d+)/);
+  const numericValue = numericMatch ? parseInt(numericMatch[0], 10) : null;
+  const suffix = numericMatch ? value.substring(numericMatch[0].length) : "";
+
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
       className="rounded-2xl p-3.5 flex flex-col items-start gap-2 cursor-default transition-all duration-200 hover:scale-[1.02]"
       style={{
         background: `linear-gradient(135deg, white 60%, ${color}08)`,
@@ -354,10 +363,19 @@ function StatCard({
         {icon}
       </div>
       <div>
-        <div className="text-[18px] font-extrabold tracking-tight leading-none mb-1 text-[#1c1c1c]">{value}</div>
+        <div className="text-[18px] font-extrabold tracking-tight leading-none mb-1 text-[#1c1c1c]">
+          {numericValue !== null ? (
+            <>
+              <CountUp from={0} to={numericValue} duration={1.5} />
+              {suffix}
+            </>
+          ) : (
+            value
+          )}
+        </div>
         <div className="text-[11px] font-semibold text-[#8b7d6b]">{label}</div>
         {subValue && <div className="text-[9.5px] font-medium text-[#bbb] mt-0.5">{subValue}</div>}
       </div>
-    </div>
+    </motion.div>
   );
 }

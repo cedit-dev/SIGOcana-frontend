@@ -1,21 +1,24 @@
 import { useNavigate } from "react-router-dom";
 import { Map, ChevronRight } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, useInView } from "framer-motion";
+import { useRef } from "react";
 
 export default function CTASection() {
     const navigate = useNavigate();
     const reduceMotion = useReducedMotion();
+    const sectionRef = useRef(null);
+    const isVisible = useInView(sectionRef, { once: true, margin: "-100px" });
+
     const transition = reduceMotion
         ? { duration: 0 }
-        : { duration: 0.5, ease: [0.22, 1, 0.36, 1] };
+        : { duration: 1.0, ease: [0.22, 1, 0.36, 1], type: "tween" as const };
 
     return (
-        <section className="py-24 bg-white">
+        <section className="py-24 bg-white" ref={sectionRef}>
             <div className="max-w-7xl mx-auto px-6">
                 <motion.div
-                    initial={reduceMotion ? {} : { opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-80px" }}
+                    initial={{ opacity: 0, y: 60, scale: 0.85, rotate: -4, filter: "blur(12px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
+                    animate={isVisible ? { opacity: 1, y: 0, scale: 1, rotate: 0, filter: "blur(0px)", boxShadow: "0 25px 50px rgba(0,0,0,0.2)" } : { opacity: 0, y: 60, scale: 0.85, rotate: -4, filter: "blur(12px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
                     transition={transition}
                     className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#2c1e0f] via-[#3d2e1e] to-[#4a3828] px-8 py-16 sm:px-16 sm:py-20 text-center"
                 >

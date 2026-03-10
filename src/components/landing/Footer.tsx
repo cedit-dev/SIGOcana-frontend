@@ -1,4 +1,5 @@
 import { Phone } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 
 const FOOTER_LINKS = [
     { label: "Inicio", href: "#inicio" },
@@ -8,12 +9,22 @@ const FOOTER_LINKS = [
 ];
 
 export default function Footer() {
+    const reduceMotion = useReducedMotion();
+    const transition = reduceMotion
+        ? { duration: 0 }
+        : { duration: 0.5, ease: [0.22, 1, 0.36, 1] };
+
     return (
-        <footer id="contacto" className="bg-[#2c1e0f] text-white/70">
+        <footer id="contacto" className="bg-[#2c1e0f] text-white/70 overflow-hidden">
             <div className="max-w-7xl mx-auto px-6 py-16">
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-12 mb-12">
                     {/* Brand */}
-                    <div>
+                    <motion.div
+                        initial={reduceMotion ? {} : { opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.3 }}
+                        transition={{ ...transition, delay: 0.1 }}
+                    >
                         <div className="flex items-center gap-2.5 mb-4">
                             <img
                                 src="/sigocana-logo.png"
@@ -25,10 +36,15 @@ export default function Footer() {
                         <p className="text-sm text-white/50 leading-relaxed max-w-xs" style={{ lineHeight: 1.7 }}>
                             Sistema de Información Geográfica del municipio de Ocaña, Norte de Santander.
                         </p>
-                    </div>
+                    </motion.div>
 
                     {/* Links */}
-                    <div>
+                    <motion.div
+                        initial={reduceMotion ? {} : { opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.3 }}
+                        transition={{ ...transition, delay: 0.2 }}
+                    >
                         <h4 className="text-sm font-bold text-white/80 uppercase tracking-wider mb-4">
                             Navegación
                         </h4>
@@ -44,10 +60,15 @@ export default function Footer() {
                                 </li>
                             ))}
                         </ul>
-                    </div>
+                    </motion.div>
 
                     {/* Contact */}
-                    <div>
+                    <motion.div
+                        initial={reduceMotion ? {} : { opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.3 }}
+                        transition={{ ...transition, delay: 0.3 }}
+                    >
                         <h4 className="text-sm font-bold text-white/80 uppercase tracking-wider mb-4">
                             Contacto
                         </h4>
@@ -63,7 +84,7 @@ export default function Footer() {
                             <Phone className="w-3.5 h-3.5" />
                             contacto@sigocana.gov.co
                         </a>
-                    </div>
+                    </motion.div>
                 </div>
 
                 {/* Bottom bar */}
