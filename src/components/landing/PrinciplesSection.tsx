@@ -1,5 +1,6 @@
 import { Network, Eye, BarChart3 } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, useInView } from "framer-motion";
+import { useRef } from "react";
 
 const PRINCIPLES = [
     {
@@ -30,17 +31,19 @@ const PRINCIPLES = [
 
 export default function PrinciplesSection() {
     const reduceMotion = useReducedMotion();
+    const sectionRef = useRef(null);
+    const isVisible = useInView(sectionRef, { once: true, margin: "-100px" });
+
     const transition = reduceMotion
         ? { duration: 0 }
-        : { duration: 0.5, ease: [0.22, 1, 0.36, 1] };
+        : { duration: 1.0, ease: [0.22, 1, 0.36, 1], type: "tween" as const };
 
     return (
-        <section className="py-24 bg-[#faf7f2]">
+        <section className="py-24 bg-[#faf7f2]" ref={sectionRef}>
             <div className="max-w-7xl mx-auto px-6">
                 <motion.div
-                    initial={reduceMotion ? {} : { opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-80px" }}
+                    initial={{ opacity: 0, y: 60, scale: 0.85, filter: "blur(8px)" }}
+                    animate={isVisible ? { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" } : { opacity: 0, y: 60, scale: 0.85, filter: "blur(8px)" }}
                     transition={transition}
                     className="text-center mb-16"
                 >
@@ -59,9 +62,8 @@ export default function PrinciplesSection() {
                     {PRINCIPLES.map((p, i) => (
                         <motion.div
                             key={p.title}
-                            initial={reduceMotion ? {} : { opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, margin: "-60px" }}
+                            initial={{ opacity: 0, y: 60, scale: 0.8, rotate: 3, filter: "blur(10px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
+                            animate={isVisible ? { opacity: 1, y: 0, scale: 1, rotate: 0, filter: "blur(0px)", boxShadow: "0 10px 25px rgba(0,0,0,0.1)" } : { opacity: 0, y: 60, scale: 0.8, rotate: 3, filter: "blur(10px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
                             transition={{ ...transition, delay: i * 0.05 }}
                             className={`${p.bg} border ${p.border} rounded-2xl p-8 hover:shadow-lg hover:shadow-[#3d2e1e]/5 hover:-translate-y-1 transition-all duration-200 cursor-pointer`}
                         >

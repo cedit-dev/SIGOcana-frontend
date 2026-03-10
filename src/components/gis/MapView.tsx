@@ -8,6 +8,7 @@ import {
   saludGeoJSON, gobiernoGeoJSON, hidrografiaGeoJSON,
   usoSueloGeoJSON, estratificacionGeoJSON, proyectosGeoJSON, viasGeoJSON,
 } from "@/data/ocana-geodata";
+import { BASE_MAPS, BaseMapKey } from "@/data/base-maps";
 
 // Fix leaflet default icon
 import iconUrl from "leaflet/dist/images/marker-icon.png";
@@ -20,14 +21,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: iconShadow,
 });
 
-const BASE_MAPS = {
-  osm: { name: "OpenStreetMap", url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", attribution: "&copy; OpenStreetMap" },
-  satellite: { name: "Satélite", url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", attribution: "&copy; Esri" },
-  topo: { name: "Topográfico", url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", attribution: "&copy; OpenTopoMap" },
-  dark: { name: "Oscuro", url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", attribution: "&copy; CARTO" },
-};
-
-type BaseMapKey = keyof typeof BASE_MAPS;
 
 interface MapViewProps {
   layers: LayerConfig[];
@@ -37,6 +30,10 @@ interface MapViewProps {
   locateMeTrigger?: number;
   onZoomChange?: (zoom: number) => void;
   onMouseMove?: (coords: { lat: number; lng: number }) => void;
+  searchTarget?: GeoJSON.Feature | null;
+  isMeasuring?: boolean;
+  onMeasureUpdate?: (distance: number) => void;
+  clearMeasureTrigger?: number;
 }
 
 // Component to change base map dynamically
@@ -193,7 +190,171 @@ function MapEventsTracker({
   return null;
 }
 
-export default function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateMeTrigger, onZoomChange, onMouseMove }: MapViewProps) {
+function SearchController({ feature }: { feature: GeoJSON.Feature | null }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!feature) return;
+
+    const geometry = feature.geometry as any;
+    let coords: [number, number] | null = null;
+
+    if (geometry.type === "Point") {
+      coords = [geometry.coordinates[1], geometry.coordinates[0]];
+    } else if (geometry.type === "Polygon") {
+      const bounds = L.geoJSON(feature).getBounds();
+      map.flyToBounds(bounds, { padding: [50, 50], duration: 1 });
+      return;
+    } else if (geometry.type === "LineString") {
+      const bounds = L.geoJSON(feature).getBounds();
+      map.flyToBounds(bounds, { padding: [50, 50], duration: 1 });
+      return;
+    }
+
+    if (coords) {
+      map.flyTo(coords, 16, { duration: 1 });
+    }
+  }, [feature, map]);
+
+  return null;
+}
+
+function MeasureController({ enabled, onDistanceUpdate, clearTrigger }: { enabled: boolean; onDistanceUpdate: (distance: number) => void; clearTrigger?: number }) {
+  const map = useMap();
+  const pointsRef = useRef<L.LatLng[]>([]);
+  const layerGroupRef = useRef<L.LayerGroup>(L.layerGroup());
+
+  // Clear all measure drawings
+  const clearMeasure = useCallback(() => {
+    layerGroupRef.current.clearLayers();
+    pointsRef.current = [];
+    onDistanceUpdate(0);
+  }, [onDistanceUpdate]);
+
+  // Clear when trigger changes
+  useEffect(() => {
+    if (clearTrigger && clearTrigger > 0) {
+      clearMeasure();
+    }
+  }, [clearTrigger, clearMeasure]);
+
+  useEffect(() => {
+    const group = layerGroupRef.current;
+    if (!map.hasLayer(group)) {
+      group.addTo(map);
+    }
+
+    if (!enabled) {
+      group.clearLayers();
+      pointsRef.current = [];
+      map.off("click");
+      return;
+    }
+
+    const formatDist = (m: number) => m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${m.toFixed(0)} m`;
+
+    const handleMapClick = (e: L.LeafletMouseEvent) => {
+      const latlng = e.latlng;
+      pointsRef.current.push(latlng);
+
+      // Rebuild all drawings
+      group.clearLayers();
+
+      // Polyline
+      if (pointsRef.current.length > 1) {
+        L.polyline(pointsRef.current, {
+          color: "#4a7c59",
+          weight: 3,
+          opacity: 0.85,
+          dashArray: "8, 6",
+        }).addTo(group);
+      }
+
+      // Circle markers + segment labels
+      let totalDistance = 0;
+      pointsRef.current.forEach((pt, i) => {
+        // Circle marker at each point
+        L.circleMarker(pt, {
+          radius: 5,
+          fillColor: i === 0 ? "#d4a96a" : "#4a7c59",
+          color: "#fff",
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 1,
+        }).addTo(group);
+
+        // Segment distance label
+        if (i > 0) {
+          const segDist = pointsRef.current[i - 1].distanceTo(pt);
+          totalDistance += segDist;
+          const midLat = (pointsRef.current[i - 1].lat + pt.lat) / 2;
+          const midLng = (pointsRef.current[i - 1].lng + pt.lng) / 2;
+
+          L.marker([midLat, midLng], {
+            icon: L.divIcon({
+              className: "measure-label",
+              html: `<span style="
+                background: rgba(74,124,89,0.92);
+                color: #fff;
+                padding: 2px 6px;
+                border-radius: 6px;
+                font-size: 10px;
+                font-weight: 700;
+                white-space: nowrap;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+                font-family: 'JetBrains Mono', monospace;
+              ">${formatDist(segDist)}</span>`,
+              iconSize: [0, 0],
+              iconAnchor: [0, 0],
+            }),
+            interactive: false,
+          }).addTo(group);
+        }
+      });
+
+      // Total distance label at last point
+      if (pointsRef.current.length > 1) {
+        const lastPt = pointsRef.current[pointsRef.current.length - 1];
+        L.marker([lastPt.lat, lastPt.lng], {
+          icon: L.divIcon({
+            className: "measure-total-label",
+            html: `<span style="
+              background: rgba(212,169,106,0.95);
+              color: #fff;
+              padding: 3px 8px;
+              border-radius: 8px;
+              font-size: 11px;
+              font-weight: 800;
+              white-space: nowrap;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+              font-family: 'JetBrains Mono', monospace;
+              display: block;
+              margin-top: -24px;
+              margin-left: 12px;
+            ">Total: ${formatDist(totalDistance)}</span>`,
+            iconSize: [0, 0],
+            iconAnchor: [0, 0],
+          }),
+          interactive: false,
+        }).addTo(group);
+      }
+
+      onDistanceUpdate(totalDistance);
+    };
+
+    map.on("click", handleMapClick);
+    map.getContainer().style.cursor = "crosshair";
+
+    return () => {
+      map.off("click", handleMapClick);
+      map.getContainer().style.cursor = "default";
+    };
+  }, [enabled, map, onDistanceUpdate]);
+
+  return null;
+}
+
+function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateMeTrigger, onZoomChange, onMouseMove, searchTarget, isMeasuring, onMeasureUpdate, clearMeasureTrigger }: MapViewProps) {
   const visibleLayers = layers.filter(l => l.visible);
 
   const getStyle = (layerId: string, color: string, opacity: number) => {
@@ -220,20 +381,22 @@ export default function MapView({ layers, baseMap, onFeatureClick, zoomToExtentT
     };
   };
 
-  const onEachFeature = (feature: GeoJSON.Feature, layer: L.Layer) => {
-    if (feature.properties) {
-      const props = feature.properties;
-      let html = `<div class="custom-popup"><h3>${props.nombre || "Sin nombre"}</h3>`;
-      Object.entries(props).filter(([k]) => k !== "nombre").forEach(([k, v]) => {
-        const label = PROP_LABELS[k] ?? k.replace(/_/g, " ");
-        const val = v === null || v === undefined ? "—" : String(v);
-        html += `<div class="attr-row"><span class="attr-label">${label}</span><span class="attr-value">${val}</span></div>`;
-      });
-      html += "</div>";
-      (layer as L.Path).bindPopup(html);
-      (layer as L.Path).on("click", () => onFeatureClick?.(feature));
-    }
-  };
+  const createOnEachFeature = useCallback((layerId: string, color: string, opacity: number) => {
+    return (feature: GeoJSON.Feature, layer: L.Layer) => {
+      if (feature.properties) {
+        const props = feature.properties;
+        let html = `<div class="custom-popup"><h3>${props.nombre || "Sin nombre"}</h3>`;
+        Object.entries(props).filter(([k]) => k !== "nombre").forEach(([k, v]) => {
+          const label = PROP_LABELS[k] ?? k.replace(/_/g, " ");
+          const val = v === null || v === undefined ? "—" : String(v);
+          html += `<div class="attr-row"><span class="attr-label">${label}</span><span class="attr-value">${val}</span></div>`;
+        });
+        html += "</div>";
+        (layer as L.Path).bindPopup(html);
+        (layer as L.Path).on("click", () => onFeatureClick?.(feature));
+      }
+    };
+  }, [onFeatureClick]);
 
   return (
     <MapContainer
@@ -252,6 +415,10 @@ export default function MapView({ layers, baseMap, onFeatureClick, zoomToExtentT
       />
 
       <MapEventsTracker onZoomChange={onZoomChange} onMouseMove={onMouseMove} />
+
+      <SearchController feature={searchTarget || null} />
+
+      {isMeasuring && <MeasureController enabled={isMeasuring} onDistanceUpdate={onMeasureUpdate || (() => { })} clearTrigger={clearMeasureTrigger} />}
 
       {visibleLayers.map(layer => {
         const data = GEOJSON_MAP[layer.id];
@@ -275,7 +442,7 @@ export default function MapView({ layers, baseMap, onFeatureClick, zoomToExtentT
             key={`${layer.id}-${layer.opacity}-${layer.visible}`}
             data={data}
             style={getStyle(layer.id, layer.color, layer.opacity)}
-            onEachFeature={onEachFeature}
+            onEachFeature={createOnEachFeature(layer.id, layer.color, layer.opacity)}
           />
         );
       })}
@@ -283,4 +450,4 @@ export default function MapView({ layers, baseMap, onFeatureClick, zoomToExtentT
   );
 }
 
-export { BASE_MAPS, type BaseMapKey };
+export default MapView;

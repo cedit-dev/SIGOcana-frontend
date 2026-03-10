@@ -13,24 +13,8 @@ export default function AnimatedBackground() {
 
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-            {/* Gradient blobs */}
-            <motion.div
-                className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-[#4a7c59]/[0.04] blur-3xl"
-                animate={reduceMotion ? {} : { scale: [1, 1.15, 1], opacity: [0.4, 0.6, 0.4] }}
-                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-            />
-            <motion.div
-                className="absolute -bottom-40 -right-40 w-[600px] h-[600px] rounded-full bg-[#d4a96a]/[0.05] blur-3xl"
-                animate={reduceMotion ? {} : { scale: [1.1, 1, 1.1], opacity: [0.3, 0.5, 0.3] }}
-                transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-            />
-            <motion.div
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-[#4a7c59]/[0.03] blur-3xl"
-                animate={reduceMotion ? {} : { scale: [1, 1.2, 1] }}
-                transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 4 }}
-            />
 
-            {/* Floating pulsing map pins */}
+            {/* Floating pulsing map pins overlay */}
             {FLOATING_PINS.map((pin, i) => (
                 <motion.div
                     key={i}

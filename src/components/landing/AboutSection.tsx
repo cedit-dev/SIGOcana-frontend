@@ -1,5 +1,6 @@
 import { MapPin, Users, Building2 } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, useInView } from "framer-motion";
+import { useRef } from "react";
 
 const STATS = [
     { icon: Users, label: "67.500 Habitantes", color: "text-[#4a7c59]" },
@@ -16,19 +17,21 @@ const INFO_ROWS = [
 
 export default function AboutSection() {
     const reduceMotion = useReducedMotion();
+    const sectionRef = useRef(null);
+    const isVisible = useInView(sectionRef, { once: true, margin: "-100px" });
+
     const transition = reduceMotion
         ? { duration: 0 }
-        : { duration: 0.5, ease: [0.22, 1, 0.36, 1] };
+        : { duration: 1.0, ease: [0.22, 1, 0.36, 1], type: "tween" as const };
 
     return (
-        <section id="nosotros" className="py-24 bg-[#faf7f2]">
+        <section id="nosotros" className="py-24 bg-[#faf7f2]" ref={sectionRef}>
             <div className="max-w-7xl mx-auto px-6">
                 <div className="flex flex-col lg:flex-row items-center gap-16">
                     {/* Left — Text */}
                     <motion.div
-                        initial={reduceMotion ? {} : { opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true, margin: "-80px" }}
+                        initial={{ opacity: 0, x: -50, y: 30, rotate: -5, filter: "blur(10px)" }}
+                        animate={isVisible ? { opacity: 1, x: 0, y: 0, rotate: 0, filter: "blur(0px)" } : { opacity: 0, x: -50, y: 30, rotate: -5, filter: "blur(10px)" }}
                         transition={transition}
                         className="flex-1"
                     >
@@ -50,11 +53,11 @@ export default function AboutSection() {
                             {STATS.map((stat, i) => (
                                 <motion.div
                                     key={stat.label}
-                                    initial={reduceMotion ? {} : { opacity: 0, y: 10 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ ...transition, delay: i * 0.05 }}
-                                    className="flex items-center gap-2 bg-white border border-[#e8dfd4] rounded-xl px-4 py-2.5 shadow-sm"
+                                    initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                                    animate={isVisible ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 30, scale: 0.9 }}
+                                    whileHover={{ scale: 1.05, y: -2 }}
+                                    transition={{ ...transition, delay: 0.2 + i * 0.08 }}
+                                    className="flex items-center gap-2 bg-white border border-[#e8dfd4] rounded-xl px-4 py-2.5 shadow-sm hover:shadow-md hover:border-[#4a7c59]/30 cursor-pointer transition-all duration-200"
                                 >
                                     <stat.icon className={`w-4 h-4 ${stat.color}`} />
                                     <span className="text-sm font-semibold text-[#2c1e0f]">{stat.label}</span>
@@ -65,10 +68,9 @@ export default function AboutSection() {
 
                     {/* Right — Info card */}
                     <motion.div
-                        initial={reduceMotion ? {} : { opacity: 0, x: 20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true, margin: "-80px" }}
-                        transition={{ ...transition, delay: 0.15 }}
+                        initial={{ opacity: 0, x: 60, scale: 0.75, y: 40, rotate: 8, filter: "blur(15px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
+                        animate={isVisible ? { opacity: 1, x: 0, scale: 1, y: 0, rotate: 0, filter: "blur(0px)", boxShadow: "0 20px 40px rgba(0,0,0,0.1)" } : { opacity: 0, x: 60, scale: 0.75, y: 40, rotate: 8, filter: "blur(15px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
+                        transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1], type: "tween", delay: 0.15 }}
                         className="flex-1 flex justify-center w-full"
                     >
                         <div className="w-full max-w-md bg-white border border-[#e8dfd4] rounded-2xl p-8 shadow-lg">

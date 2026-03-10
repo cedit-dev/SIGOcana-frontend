@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import BlurText from "@/components/BlurText";
 import {
   ChevronDown,
   ChevronRight,
@@ -80,7 +81,6 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { LayerConfig, LAYER_CATEGORIES } from "@/data/ocana-geodata";
-import { BASE_MAPS, BaseMapKey } from "./MapView";
 
 const ICON_MAP: Record<string, any> = {
   Layout, HardHat, Building2, Leaf, BarChart3, Home, GraduationCap,
@@ -106,8 +106,6 @@ interface LayerPanelProps {
   layers: LayerConfig[];
   onToggleLayer: (id: string) => void;
   onOpacityChange: (id: string, opacity: number) => void;
-  baseMap: BaseMapKey;
-  onBaseMapChange: (key: BaseMapKey) => void;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -133,10 +131,9 @@ const FEATURED_LABELS: Record<string, string> = {
 
 export default function LayerPanel({
   layers, onToggleLayer, onOpacityChange,
-  baseMap, onBaseMapChange, isOpen, onClose
+  isOpen, onClose
 }: LayerPanelProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set([]));
-  const [showBaseMaps, setShowBaseMaps] = useState(false);
   const [showFeatured, setShowFeatured] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -168,10 +165,10 @@ export default function LayerPanel({
           className="absolute top-4 bottom-4 z-[1000] w-[320px] flex flex-col rounded-2xl overflow-hidden"
           style={{
             left: "60px",
-            background: "rgba(255, 255, 255, 0.96)",
+            background: "rgba(235, 228, 218, 0.97)",
             backdropFilter: "blur(24px) saturate(1.6)",
             WebkitBackdropFilter: "blur(24px) saturate(1.6)",
-            border: "1px solid rgba(0,0,0,0.07)",
+            border: "1px solid rgba(180,170,155,0.4)",
             boxShadow: "0 12px 40px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.04)",
           }}
         >
@@ -183,7 +180,9 @@ export default function LayerPanel({
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-[#4a7c59]" />
-                <h2 className="font-semibold text-lg text-[#2a2a2a]">Capas</h2>
+                <h2 className="font-semibold text-lg text-[#2a2a2a] min-w-[60px] h-[28px]">
+                  <BlurText text="Capas" animateBy="letters" delay={30} stepDuration={0.2} />
+                </h2>
                 <span className="gis-badge bg-[#4a7c59]/10 text-[#4a7c59]">
                   {activeCount} activas
                 </span>
@@ -210,44 +209,6 @@ export default function LayerPanel({
                 style={{ background: "rgba(0,0,0,0.03)" }}
               />
             </div>
-          </div>
-
-          {/* Base maps */}
-          <div style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
-            <button
-              onClick={() => setShowBaseMaps(!showBaseMaps)}
-              className="flex items-center gap-2 w-full px-4 py-3 hover:bg-black/[0.03] transition-colors text-sm font-medium text-[#2a2a2a]"
-            >
-              <MapIcon className="w-4 h-4 text-[#c4945a]" />
-              <span>Mapa Base</span>
-              <span className="text-xs text-[#999] ml-auto mr-2">{BASE_MAPS[baseMap].name}</span>
-              {showBaseMaps ? <ChevronDown className="w-4 h-4 text-[#999]" /> : <ChevronRight className="w-4 h-4 text-[#999]" />}
-            </button>
-            <AnimatePresence>
-              {showBaseMaps && (
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={{ height: "auto" }}
-                  exit={{ height: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="px-4 pb-3 grid grid-cols-2 gap-2">
-                    {(Object.entries(BASE_MAPS) as [BaseMapKey, typeof BASE_MAPS.osm][]).map(([key, val]) => (
-                      <button
-                        key={key}
-                        onClick={() => onBaseMapChange(key)}
-                        className={`text-xs px-3 py-2 rounded-xl border transition-all font-medium ${baseMap === key
-                          ? "bg-[#4a7c59] border-[#4a7c59] text-white"
-                          : "border-black/8 hover:bg-black/[0.03] text-[#555]"
-                          }`}
-                      >
-                        {val.name}
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
 
           {/* ── Capas Disponibles (featured data layers) ── */}
@@ -348,8 +309,8 @@ export default function LayerPanel({
                     onClick={() => toggleCategory(cat.id)}
                     className={`flex items-center gap-3 w-full px-5 py-3.5 hover:bg-black/[0.03] transition-all ${isExpanded ? 'bg-black/[0.02]' : ''}`}
                   >
-                    <div className={`p-1.5 rounded-lg transition-all duration-200 ${isExpanded ? 'bg-[#4a7c59]/12 text-[#4a7c59]' : 'bg-black/[0.03] text-[#aaa]'}`}>
-                      <IconRenderer name={cat.icon} className="w-4 h-4" />
+                    <div className={`p-2 rounded-lg transition-all duration-200 ${isExpanded ? 'bg-[#4a7c59]/12 text-[#4a7c59]' : 'bg-black/[0.03] text-[#aaa]'}`}>
+                      <IconRenderer name={cat.icon} className="w-5 h-5" />
                     </div>
                     <span className={`text-[13px] font-semibold tracking-tight transition-colors ${isExpanded ? 'text-[#1a1a1a]' : 'text-[#3a3a3a]'}`}>{cat.name}</span>
                     <div className="ml-auto flex items-center gap-2">

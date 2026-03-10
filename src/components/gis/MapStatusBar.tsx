@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Globe, Layers, ZoomIn, Map as MapIcon } from "lucide-react";
+import { Globe, Layers, ZoomIn, Map as MapIcon, Ruler } from "lucide-react";
 
 interface MapStatusBarProps {
   zoom: number;
@@ -7,6 +7,7 @@ interface MapStatusBarProps {
   activeLayers: number;
   totalLayers: number;
   baseMapName: string;
+  measureDistance?: number | null;
 }
 
 export default function MapStatusBar({
@@ -15,7 +16,14 @@ export default function MapStatusBar({
   activeLayers,
   totalLayers,
   baseMapName,
+  measureDistance,
 }: MapStatusBarProps) {
+  const formatDistance = (meters: number) => {
+    if (meters >= 1000) {
+      return `${(meters / 1000).toFixed(2)} km`;
+    }
+    return `${meters.toFixed(0)} m`;
+  };
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
@@ -24,7 +32,7 @@ export default function MapStatusBar({
       className="absolute bottom-0 left-0 right-0 z-[998] flex items-center"
       style={{
         height: "26px",
-        background: "rgba(255, 255, 255, 0.88)",
+        background: "rgba(235, 228, 218, 0.92)",
         backdropFilter: "blur(12px) saturate(1.3)",
         WebkitBackdropFilter: "blur(12px) saturate(1.3)",
         borderTop: "1px solid rgba(0,0,0,0.06)",
@@ -68,6 +76,16 @@ export default function MapStatusBar({
           <div className="w-1.5 h-1.5 rounded-full bg-[#4a7c59]" style={{ animation: "status-blink 2.5s infinite" }} />
         )}
       </div>
+
+      {/* Measure distance */}
+      {measureDistance !== null && measureDistance !== undefined && (
+        <div className="flex items-center gap-1.5 px-3 h-full border-r border-black/[0.05]">
+          <Ruler className="w-2.5 h-2.5 text-[#4a7c59] flex-shrink-0" />
+          <span className="text-[10px] font-semibold text-[#4a7c59]">
+            📏 {formatDistance(measureDistance)}
+          </span>
+        </div>
+      )}
 
       {/* Right: base map + branding */}
       <div className="ml-auto flex items-center h-full">
