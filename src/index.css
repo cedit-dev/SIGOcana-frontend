@@ -280,13 +280,9 @@
   color: #2a2a2a;
 }
 
-/* Marker hover */
+/* Marker hover - removed as it conflicts with Leaflet's internal translation */
 .leaflet-marker-icon {
-  transition: transform 0.2s ease !important;
-}
-
-.leaflet-marker-icon:hover {
-  transform: scale(1.12) !important;
+  /* transition: transform 0.2s ease !important; */
 }
 
 /* Pulse animation for markers */
