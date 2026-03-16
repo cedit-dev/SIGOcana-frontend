@@ -15,10 +15,18 @@ import iconUrl from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
 import iconRetina from "leaflet/dist/images/marker-icon-2x.png";
 
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+
+(L.Icon.Default as any).imagePath = "";
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: iconRetina,
   iconUrl: iconUrl,
   shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  tooltipAnchor: [16, -28],
+  shadowSize: [41, 41],
 });
 
 
@@ -134,6 +142,7 @@ const USO_COLORS: Record<string, string> = {
 function MapController({ zoomToExtentTrigger, locateMeTrigger }: { zoomToExtentTrigger?: number; locateMeTrigger?: number }) {
   const map = useMap();
   const [userLocation, setUserLocation] = useState<L.LatLng | null>(null);
+  const [accuracy, setAccuracy] = useState<number>(0);
 
   useEffect(() => {
     if (zoomToExtentTrigger) {
@@ -143,26 +152,41 @@ function MapController({ zoomToExtentTrigger, locateMeTrigger }: { zoomToExtentT
 
   useEffect(() => {
     if (locateMeTrigger) {
-      map.locate({ setView: true, maxZoom: 16 });
+      map.locate({ 
+        setView: false, 
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0 // Force fresh location, don't use cached data
+      });
     }
   }, [locateMeTrigger, map]);
 
   useEffect(() => {
-    map.on("locationfound", (e) => {
+    const handleLocationFound = (e: L.LocationEvent) => {
       setUserLocation(e.latlng);
-    });
-    // Clean up event listener on unmount
+      setAccuracy(e.accuracy);
+      map.flyTo(e.latlng, 17, { duration: 1.5 });
+    };
+
+    const handleLocationError = (e: L.ErrorEvent) => {
+      console.error("Error de ubicación:", e.message);
+    };
+
+    map.on("locationfound", handleLocationFound);
+    map.on("locationerror", handleLocationError);
+    
     return () => {
-      map.off("locationfound");
+      map.off("locationfound", handleLocationFound);
+      map.off("locationerror", handleLocationError);
     };
   }, [map]);
 
   return userLocation ? (
     <>
       <Marker position={userLocation}>
-        <Popup>Te encuentras aquí</Popup>
+        <Popup>Te encuentras aquí (Margen de error: {Math.round(accuracy)}m)</Popup>
       </Marker>
-      <Circle center={userLocation} radius={100} pathOptions={{ color: '#0ea5e9', fillColor: '#0ea5e9', fillOpacity: 0.1 }} />
+      <Circle center={userLocation} radius={accuracy} pathOptions={{ color: '#0ea5e9', fillColor: '#0ea5e9', fillOpacity: 0.1 }} />
     </>
   ) : null;
 }
@@ -402,6 +426,7 @@ function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateM
     <MapContainer
       center={OCANA_CENTER}
       zoom={OCANA_ZOOM}
+      maxZoom={20}
       zoomControl={false}
       className="w-full h-full"
       style={{ background: "#e8f0fe" }}
