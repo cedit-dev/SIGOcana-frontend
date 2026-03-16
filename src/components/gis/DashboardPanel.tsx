@@ -354,9 +354,9 @@ function StatCard({
       transition={{ duration: 0.35 }}
       className="rounded-2xl p-3.5 flex flex-col items-start gap-2 cursor-default transition-all duration-200 hover:scale-[1.02]"
       style={{
-        background: `linear-gradient(135deg, white 60%, ${color}08)`,
-        border: `1px solid ${color}18`,
-        boxShadow: `0 2px 8px ${color}0f, 0 1px 2px rgba(0,0,0,0.03)`,
+        background: `linear-gradient(135deg, white 45%, ${color}20)`,
+        border: `1px solid ${color}30`,
+        boxShadow: `0 2px 8px ${color}20, 0 1px 2px rgba(0,0,0,0.05)`,
       }}
     >
       <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${color}14`, color }}>

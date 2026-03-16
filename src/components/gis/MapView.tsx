@@ -318,15 +318,16 @@ function MeasureController({ enabled, onDistanceUpdate, clearTrigger }: { enable
             icon: L.divIcon({
               className: "measure-label",
               html: `<span style="
-                background: rgba(74,124,89,0.92);
-                color: #fff;
-                padding: 2px 6px;
+                background: rgba(0,0,0,0.85);
+                color: #ffff00;
+                padding: 3px 8px;
                 border-radius: 6px;
-                font-size: 10px;
+                font-size: 11px;
                 font-weight: 700;
                 white-space: nowrap;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.4);
                 font-family: 'JetBrains Mono', monospace;
+                border: 1px solid rgba(255,255,0,0.3);
               ">${formatDist(segDist)}</span>`,
               iconSize: [0, 0],
               iconAnchor: [0, 0],
@@ -343,18 +344,20 @@ function MeasureController({ enabled, onDistanceUpdate, clearTrigger }: { enable
           icon: L.divIcon({
             className: "measure-total-label",
             html: `<span style="
-              background: rgba(212,169,106,0.95);
-              color: #fff;
-              padding: 3px 8px;
-              border-radius: 8px;
-              font-size: 11px;
-              font-weight: 800;
+              background: #fff;
+              color: #1a1a1a;
+              padding: 10px 20px;
+              border-radius: 12px;
+              font-size: 15px;
+              font-weight: 900;
               white-space: nowrap;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+              box-shadow: 0 6px 16px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
               font-family: 'JetBrains Mono', monospace;
-              display: block;
-              margin-top: -24px;
+              display: inline-block;
+              margin-top: -28px;
               margin-left: 12px;
+              border: 3px solid #4a7c59;
+              line-height: 1;
             ">Total: ${formatDist(totalDistance)}</span>`,
             iconSize: [0, 0],
             iconAnchor: [0, 0],
