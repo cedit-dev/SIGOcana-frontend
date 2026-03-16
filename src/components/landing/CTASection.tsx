@@ -11,14 +11,14 @@ export default function CTASection() {
 
     const transition = reduceMotion
         ? { duration: 0 }
-        : { duration: 1.0, ease: [0.22, 1, 0.36, 1], type: "tween" as const };
+        : { duration: 0.7, ease: [0.22, 1, 0.36, 1], type: "tween" as const };
 
     return (
         <section className="py-24 bg-white" ref={sectionRef}>
             <div className="max-w-7xl mx-auto px-6">
                 <motion.div
-                    initial={{ opacity: 0, y: 60, scale: 0.85, rotate: -4, filter: "blur(12px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
-                    animate={isVisible ? { opacity: 1, y: 0, scale: 1, rotate: 0, filter: "blur(0px)", boxShadow: "0 25px 50px rgba(0,0,0,0.2)" } : { opacity: 0, y: 60, scale: 0.85, rotate: -4, filter: "blur(12px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
+                    initial={{ opacity: 0, y: 50, scale: 0.9, rotate: -3, filter: "blur(10px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
+                    animate={isVisible ? { opacity: 1, y: 0, scale: 1, rotate: 0, filter: "blur(0px)", boxShadow: "0 25px 50px rgba(0,0,0,0.2)" } : { opacity: 0, y: 50, scale: 0.9, rotate: -3, filter: "blur(10px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
                     transition={transition}
                     className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#2c1e0f] via-[#3d2e1e] to-[#4a3828] px-8 py-16 sm:px-16 sm:py-20 text-center"
                 >

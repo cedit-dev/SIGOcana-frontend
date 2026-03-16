@@ -11,7 +11,7 @@ export default function HeroSection() {
 
     const enterTransition = reduceMotion
         ? { duration: 0 }
-        : { duration: 1.2, ease: [0.22, 1, 0.36, 1] };
+        : { duration: 0.8, ease: [0.22, 1, 0.36, 1] };
 
     return (
         <section id="inicio" className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden">
@@ -101,7 +101,7 @@ export default function HeroSection() {
                             rotate: [0, 2, -1, 0]
                         }}
                         transition={{
-                            duration: 10,
+                            duration: 6,
                             repeat: Infinity,
                             ease: "easeInOut",
                         }}
@@ -119,12 +119,12 @@ export default function HeroSection() {
                         <motion.div
                             className="absolute top-[15%] right-[10%] w-4 h-4 rounded-full bg-[#4a7c59]/60"
                             animate={reduceMotion ? {} : { scale: [1, 1.6, 1], opacity: [0.6, 0, 0.6] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
                         />
                         <motion.div
                             className="absolute bottom-[30%] left-[5%] w-3 h-3 rounded-full bg-[#d4a96a]/60"
                             animate={reduceMotion ? {} : { scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
-                            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
                         />
                     </motion.div>
                 </motion.div>
@@ -136,7 +136,7 @@ export default function HeroSection() {
                     y: [0, 8, 0],
                 }}
                 transition={{
-                    duration: 2,
+                    duration: 1.2,
                     repeat: Infinity,
                     ease: "easeInOut",
                 }}
@@ -147,7 +147,7 @@ export default function HeroSection() {
                         opacity: [1, 0.5, 1],
                     }}
                     transition={{
-                        duration: 2,
+                        duration: 1.2,
                         repeat: Infinity,
                         ease: "easeInOut",
                     }}
