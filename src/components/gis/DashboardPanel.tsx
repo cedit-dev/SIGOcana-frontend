@@ -37,10 +37,10 @@ export default function DashboardPanel({ isOpen, onClose }: DashboardPanelProps)
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          initial={{ x: "100%", opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: "100%", opacity: 0 }}
-          transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          initial={{ x: "100%", opacity: 0, scale: 0.95 }}
+          animate={{ x: 0, opacity: 1, scale: 1 }}
+          exit={{ x: "100%", opacity: 0, scale: 0.95 }}
+          transition={{ type: "spring", damping: 18, stiffness: 400, mass: 0.8 }}
           className="absolute top-4 bottom-4 h-auto z-[1000] flex flex-col overflow-hidden rounded-2xl"
           style={{
             width: "380px",
@@ -349,9 +349,9 @@ function StatCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      initial={{ opacity: 0, y: 8, scale: 0.95 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.35 }}
       className="rounded-2xl p-3.5 flex flex-col items-start gap-2 cursor-default transition-all duration-200 hover:scale-[1.02]"
       style={{
         background: `linear-gradient(135deg, white 60%, ${color}08)`,
