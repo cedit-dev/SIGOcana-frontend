@@ -22,7 +22,7 @@ export default function AboutSection() {
 
     const transition = reduceMotion
         ? { duration: 0 }
-        : { duration: 1.0, ease: [0.22, 1, 0.36, 1], type: "tween" as const };
+        : { duration: 0.7, ease: [0.22, 1, 0.36, 1], type: "tween" as const };
 
     return (
         <section id="nosotros" className="py-24 bg-[#faf7f2]" ref={sectionRef}>
@@ -30,8 +30,8 @@ export default function AboutSection() {
                 <div className="flex flex-col lg:flex-row items-center gap-16">
                     {/* Left — Text */}
                     <motion.div
-                        initial={{ opacity: 0, x: -50, y: 30, rotate: -5, filter: "blur(10px)" }}
-                        animate={isVisible ? { opacity: 1, x: 0, y: 0, rotate: 0, filter: "blur(0px)" } : { opacity: 0, x: -50, y: 30, rotate: -5, filter: "blur(10px)" }}
+                        initial={{ opacity: 0, x: -40, y: 20, rotate: -3, filter: "blur(8px)" }}
+                        animate={isVisible ? { opacity: 1, x: 0, y: 0, rotate: 0, filter: "blur(0px)" } : { opacity: 0, x: -40, y: 20, rotate: -3, filter: "blur(8px)" }}
                         transition={transition}
                         className="flex-1"
                     >
@@ -56,7 +56,7 @@ export default function AboutSection() {
                                     initial={{ opacity: 0, y: 30, scale: 0.9 }}
                                     animate={isVisible ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 30, scale: 0.9 }}
                                     whileHover={{ scale: 1.05, y: -2 }}
-                                    transition={{ ...transition, delay: 0.2 + i * 0.08 }}
+                                    transition={{ ...transition, delay: 0.1 + i * 0.06 }}
                                     className="flex items-center gap-2 bg-white border border-[#e8dfd4] rounded-xl px-4 py-2.5 shadow-sm hover:shadow-md hover:border-[#4a7c59]/30 cursor-pointer transition-all duration-200"
                                 >
                                     <stat.icon className={`w-4 h-4 ${stat.color}`} />
@@ -68,9 +68,9 @@ export default function AboutSection() {
 
                     {/* Right — Info card */}
                     <motion.div
-                        initial={{ opacity: 0, x: 60, scale: 0.75, y: 40, rotate: 8, filter: "blur(15px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
-                        animate={isVisible ? { opacity: 1, x: 0, scale: 1, y: 0, rotate: 0, filter: "blur(0px)", boxShadow: "0 20px 40px rgba(0,0,0,0.1)" } : { opacity: 0, x: 60, scale: 0.75, y: 40, rotate: 8, filter: "blur(15px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
-                        transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1], type: "tween", delay: 0.15 }}
+                        initial={{ opacity: 0, x: 50, scale: 0.8, y: 30, rotate: 5, filter: "blur(12px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
+                        animate={isVisible ? { opacity: 1, x: 0, scale: 1, y: 0, rotate: 0, filter: "blur(0px)", boxShadow: "0 20px 40px rgba(0,0,0,0.1)" } : { opacity: 0, x: 50, scale: 0.8, y: 30, rotate: 5, filter: "blur(12px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
+                        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], type: "tween", delay: 0.08 }}
                         className="flex-1 flex justify-center w-full"
                     >
                         <div className="w-full max-w-md bg-white border border-[#e8dfd4] rounded-2xl p-8 shadow-lg">
