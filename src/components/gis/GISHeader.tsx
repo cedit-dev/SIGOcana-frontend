@@ -82,14 +82,6 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
         className="flex items-center gap-2.5 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
         title="Ir a la página principal"
       >
-        <div className="relative">
-          <img
-            src="/sigocana-logo.png"
-            alt="SigOcaña Logo"
-            className="w-9 h-9 rounded-xl object-cover"
-            style={{ boxShadow: "0 2px 8px rgba(74,124,89,0.25)" }}
-          />
-        </div>
         <div className="text-left">
           <GradientText
             className="text-[14px] font-extrabold leading-none tracking-tight"

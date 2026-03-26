@@ -105,21 +105,7 @@ export default function Login() {
                 >
                     {/* ── Header ── */}
                     <div className="pt-10 pb-6 px-8 text-center">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.85 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ ...enterT, delay: 0.25 }}
-                            className="flex justify-center mb-5"
-                        >
-                            <img
-                                src="/sigocana-logo.png"
-                                alt="SigOcaña"
-                                className="w-20 h-20 rounded-2xl object-cover shadow-lg"
-                                style={{
-                                    boxShadow: "0 8px 24px rgba(74,124,89,0.30)",
-                                }}
-                            />
-                        </motion.div>
+
 
                         {/* Badge */}
                         <motion.div

@@ -26,11 +26,6 @@ export default function Footer() {
                         transition={{ ...transition, delay: 0.1 }}
                     >
                         <div className="flex items-center gap-2.5 mb-4">
-                            <img
-                                src="/sigocana-logo.png"
-                                alt="SigOcaña"
-                                className="w-8 h-8 object-contain brightness-200"
-                            />
                             <span className="text-base font-extrabold text-white/90">SIGOCAÑA</span>
                         </div>
                         <p className="text-sm text-white/50 leading-relaxed max-w-xs" style={{ lineHeight: 1.7 }}>

@@ -42,8 +42,8 @@ export default function PrinciplesSection() {
         <section className="py-24 bg-[#faf7f2]" ref={sectionRef}>
             <div className="max-w-7xl mx-auto px-6">
                 <motion.div
-                    initial={{ opacity: 0, y: 40, scale: 0.9, filter: "blur(6px)" }}
-                    animate={isVisible ? { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" } : { opacity: 0, y: 40, scale: 0.9, filter: "blur(6px)" }}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
                     transition={transition}
                     className="text-center mb-16"
                 >
@@ -62,8 +62,8 @@ export default function PrinciplesSection() {
                     {PRINCIPLES.map((p, i) => (
                         <motion.div
                             key={p.title}
-                            initial={{ opacity: 0, y: 50, scale: 0.85, rotate: 2, filter: "blur(8px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
-                            animate={isVisible ? { opacity: 1, y: 0, scale: 1, rotate: 0, filter: "blur(0px)", boxShadow: "0 10px 25px rgba(0,0,0,0.1)" } : { opacity: 0, y: 50, scale: 0.85, rotate: 2, filter: "blur(8px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
                             transition={{ ...transition, delay: i * 0.04 }}
                             className={`${p.bg} border ${p.border} rounded-2xl p-8 hover:shadow-lg hover:shadow-[#3d2e1e]/5 hover:-translate-y-1 transition-all duration-200 cursor-pointer`}
                         >

@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 
 const FLOATING_PINS = [
     { x: "12%", y: "20%", delay: 0, size: 10 },
@@ -13,26 +13,18 @@ export default function AnimatedBackground() {
 
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-
-            {/* Floating pulsing map pins overlay */}
+            {/* Static decorative map pins — no JS animation, uses CSS instead */}
             {FLOATING_PINS.map((pin, i) => (
-                <motion.div
+                <div
                     key={i}
                     className="absolute"
-                    style={{ left: pin.x, top: pin.y }}
-                    animate={
-                        reduceMotion
-                            ? { opacity: 0.2 }
-                            : {
-                                y: [0, -8, 0],
-                                opacity: [0.15, 0.35, 0.15],
-                            }
-                    }
-                    transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: pin.delay,
+                    style={{
+                        left: pin.x,
+                        top: pin.y,
+                        opacity: 0.2,
+                        animation: reduceMotion
+                            ? 'none'
+                            : `floatPin 4s ease-in-out ${pin.delay}s infinite`,
                     }}
                 >
                     <svg
@@ -48,7 +40,7 @@ export default function AnimatedBackground() {
                         />
                         <circle cx="12" cy="11" r="4" fill="#4a7c59" fillOpacity="0.5" />
                     </svg>
-                </motion.div>
+                </div>
             ))}
         </div>
     );

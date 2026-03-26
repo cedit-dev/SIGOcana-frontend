@@ -10,11 +10,13 @@ import LegendPanel from "@/components/gis/LegendPanel";
 import MapStatusBar from "@/components/gis/MapStatusBar";
 import { LAYERS_CONFIG, LayerConfig, OCANA_ZOOM, comunasGeoJSON, barriosGeoJSON, educacionGeoJSON, saludGeoJSON, gobiernoGeoJSON, proyectosGeoJSON } from "@/data/ocana-geodata";
 import { useToast } from "@/components/ui/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
+  const isMobile = useIsMobile();
   const [layers, setLayers] = useState<LayerConfig[]>(LAYERS_CONFIG);
   const [baseMap, setBaseMap] = useState<BaseMapKey>("osm");
-  const [layersPanelOpen, setLayersPanelOpen] = useState(true);
+  const [layersPanelOpen, setLayersPanelOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState<GeoJSON.Feature | null>(null);
   const [zoomTrigger, setZoomTrigger] = useState(0);
@@ -144,10 +146,19 @@ const Index = () => {
       <GISHeader onFeatureSelect={setSearchTarget} />
 
       <div className="flex-1 relative">
-        {/* Toolbar */}
-        <MapToolbar
-          onToggleLayers={() => setLayersPanelOpen(p => !p)}
-          onToggleDashboard={() => setDashboardOpen(p => !p)}
+        {/* Toolbar - hidden on mobile when dashboard is open */}
+        {(!isMobile || !dashboardOpen) && <MapToolbar
+          onToggleLayers={() => {
+            if (isMobile) setDashboardOpen(false);
+            setLayersPanelOpen(p => !p);
+          }}
+          onToggleDashboard={() => {
+            const opening = !dashboardOpen;
+            if (opening && isMobile) {
+              setLayersPanelOpen(false);
+            }
+            setDashboardOpen(p => !p);
+          }}
           onZoomToExtent={handleZoomToExtent}
           onPrint={handlePrint}
           onExport={handleExport}
@@ -158,7 +169,7 @@ const Index = () => {
           isMeasuring={isMeasuring}
           baseMap={baseMap}
           onBaseMapChange={setBaseMap}
-        />
+        />}
 
         {/* Layer Panel */}
         <LayerPanel

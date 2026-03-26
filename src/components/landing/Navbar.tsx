@@ -33,8 +33,8 @@ export default function Navbar() {
     return (
         <nav
             className={`fixed top-4 left-4 right-4 z-50 rounded-2xl transition-all duration-300 ${scrolled
-                    ? "bg-white/80 backdrop-blur-xl shadow-lg shadow-[#3d2e1e]/5 border border-[#e8dfd4]"
-                    : "bg-white/50 backdrop-blur-md border border-transparent"
+                ? "bg-white/80 backdrop-blur-xl shadow-lg shadow-[#3d2e1e]/5 border border-[#e8dfd4]"
+                : "bg-white/50 backdrop-blur-md border border-transparent"
                 }`}
         >
             <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
@@ -44,11 +44,6 @@ export default function Navbar() {
                     className="flex items-center gap-2.5 cursor-pointer group"
                     aria-label="SigOcaña - Ir al inicio"
                 >
-                    <img
-                        src="/sigocana-logo.png"
-                        alt="SigOcaña Logo"
-                        className="w-8 h-8 object-contain group-hover:scale-105 transition-transform duration-200"
-                    />
                     <span className="text-base font-extrabold tracking-tight text-[#2c1e0f]">
                         SIGOCAÑA
                     </span>
