@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Map, ChevronRight } from "lucide-react";
 import { motion, useReducedMotion, useInView } from "framer-motion";
 import { useRef } from "react";
+import Particles from "@/components/Particles";
 
 export default function CTASection() {
     const navigate = useNavigate();
@@ -17,14 +18,27 @@ export default function CTASection() {
         <section className="py-24 bg-white" ref={sectionRef}>
             <div className="max-w-7xl mx-auto px-6">
                 <motion.div
-                    initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                    animate={isVisible ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 30, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                     transition={transition}
                     className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#2c1e0f] via-[#3d2e1e] to-[#4a3828] px-8 py-16 sm:px-16 sm:py-20 text-center"
                 >
-                    {/* Decorative elements */}
-                    <div className="absolute top-0 left-0 w-64 h-64 bg-[#4a7c59]/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-                    <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#d4a96a]/10 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
+                    {/* Decorative particles background */}
+                    {!reduceMotion && (
+                        <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+                            <Particles
+                                particleCount={60}
+                                particleSpread={12}
+                                speed={0.04}
+                                particleColors={["#6ba368", "#4a7c59", "#d4a96a", "#c4883a"]}
+                                alphaParticles={true}
+                                particleBaseSize={80}
+                                cameraDistance={22}
+                                moveParticlesOnHover={false}
+                                disableRotation={false}
+                            />
+                        </div>
+                    )}
 
                     <div className="relative z-10">
                         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-4 leading-tight">

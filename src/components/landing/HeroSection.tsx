@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Map, ChevronDown } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
-import AnimatedBackground from "./AnimatedBackground";
 import BlurText from "@/components/BlurText";
 import GradientText from "@/components/GradientText";
 
@@ -15,7 +14,6 @@ export default function HeroSection() {
 
     return (
         <section id="inicio" className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden">
-            <AnimatedBackground />
 
             <div className="relative z-10 max-w-7xl mx-auto px-6 w-full flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-16 flex-1">
                 {/* Text block — order-2 on mobile (below image), order-1 on desktop (left) */}
@@ -40,10 +38,10 @@ export default function HeroSection() {
                         </GradientText>
                     </motion.div>
 
-                    <div className="text-4xl sm:text-6xl lg:text-7xl font-black leading-[0.92] tracking-tight text-[#2c1e0f] mb-3">
+                    <div className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[0.92] tracking-tight text-[#2c1e0f] mb-3">
                         <BlurText
                             text="DESCUBRE OCAÑA"
-                            className="text-4xl sm:text-6xl lg:text-7xl font-black leading-[0.92] tracking-tight text-[#2c1e0f]"
+                            className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[0.92] tracking-tight text-[#2c1e0f] justify-center"
                             delay={100}
                             animateBy="words"
                             direction="top"
@@ -56,7 +54,7 @@ export default function HeroSection() {
                         transition={{ ...enterTransition, delay: 0.35 }}
                         className="hidden sm:block text-lg sm:text-xl text-[#6b5b4e] font-medium leading-relaxed mb-6 max-w-md" style={{ lineHeight: 1.6 }}
                     >
-                        Tu guía digital interactiva para explorar, analizar y gestionar la información geoespacial del municipio.
+                        Plataforma oficial de información geoespacial para la planificación territorial, gestión pública y transparencia del municipio de Ocaña, Norte de Santander.
                     </motion.p>
 
                     <motion.div
@@ -88,8 +86,8 @@ export default function HeroSection() {
 
                 {/* Illustration — order-1 on mobile (top), order-2 on desktop (right) */}
                 <motion.div
-                    initial={reduceMotion ? {} : { opacity: 0, scale: 0.92 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    initial={reduceMotion ? {} : { opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ ...enterTransition, delay: 0.3 }}
                     className="order-1 lg:order-2 flex justify-center lg:flex-1 lg:justify-end"
                 >
@@ -97,10 +95,11 @@ export default function HeroSection() {
                         className="relative w-full max-w-[220px] lg:max-w-lg"
                         style={{
                             animation: reduceMotion ? 'none' : 'heroFloat 6s ease-in-out infinite',
+                            willChange: 'transform',
                         }}
                     >
                         {/* Glow behind image */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-[#4a7c59]/10 to-[#d4a96a]/10 rounded-3xl blur-3xl scale-110" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#4a7c59]/10 to-[#d4a96a]/10 rounded-3xl blur-2xl scale-110" />
                         <img
                             src="/hero-illustration.png"
                             alt="Ilustración de Ocaña: torre histórica con pins de ubicación representando el sistema de información geográfica"

@@ -1,5 +1,4 @@
 import { motion, AnimatePresence } from "framer-motion";
-import BlurText from "@/components/BlurText";
 import { useState } from "react";
 import { ChevronDown, ChevronUp, ListFilter, Eye, EyeOff } from "lucide-react";
 import { LayerConfig, LAYER_CATEGORIES } from "@/data/ocana-geodata";
@@ -39,8 +38,8 @@ export default function LegendPanel({ layers, onToggleLayer }: LegendPanelProps)
       >
         <div className="flex items-center gap-2">
           <ListFilter className="w-3.5 h-3.5 text-[#4a7c59]" />
-          <h4 className="text-[11px] font-bold text-[#1c1c1c] uppercase tracking-widest mt-1 min-w-[70px]">
-            <BlurText text="Leyenda" animateBy="letters" delay={30} stepDuration={0.2} />
+          <h4 className="text-[11px] font-bold text-[#1c1c1c] uppercase tracking-widest">
+            Leyenda
           </h4>
           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#4a7c59]/10 text-[#4a7c59]">
             {visibleLayers.length}

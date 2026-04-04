@@ -154,6 +154,16 @@ export default function FeatureInfoPanel({ feature, onClose }: FeatureInfoPanelP
                   variant="outline"
                   size="icon"
                   className="w-9 h-9 rounded-xl border-[#e8dfd4] text-[#8b7d6b] hover:text-[#2c1e0f] hover:border-[#4a7c59]/30"
+                  onClick={() => {
+                    const text = feature
+                      ? `${feature.properties?.nombre || "Elemento"}\n${JSON.stringify(feature.properties, null, 2)}`
+                      : "";
+                    if (navigator.share) {
+                      navigator.share({ title: feature?.properties?.nombre || "SIGOcaña", text });
+                    } else {
+                      navigator.clipboard.writeText(text);
+                    }
+                  }}
                 >
                   <Share2 className="w-3.5 h-3.5" />
                 </Button>
@@ -164,8 +174,9 @@ export default function FeatureInfoPanel({ feature, onClose }: FeatureInfoPanelP
             <Button
               className="h-9 px-4 rounded-xl text-xs font-bold text-white"
               style={{ background: "linear-gradient(135deg, #4a7c59, #5d9a6e)" }}
+              onClick={() => window.print()}
             >
-              Ver Reporte
+              Imprimir
             </Button>
           </div>
         </motion.div>

@@ -49,10 +49,11 @@ export default function DashboardPanel({ isOpen, onClose }: DashboardPanelProps)
               : "absolute top-4 bottom-4 right-[60px] z-[1000] flex flex-col rounded-2xl overflow-hidden w-[400px]"
             }
             style={{
-              background: "rgba(255,255,255,0.97)",
-              backdropFilter: "blur(20px)",
-              boxShadow: "0 12px 40px rgba(0,0,0,0.12)",
-              border: isMobile ? "none" : "1px solid rgba(0,0,0,0.08)",
+              background: "rgba(235,228,218,0.97)",
+              backdropFilter: "blur(20px) saturate(1.5)",
+              WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+              boxShadow: "0 12px 40px rgba(44,30,15,0.10)",
+              border: isMobile ? "none" : "1px solid rgba(180,170,155,0.4)",
             }}
           >
             {/* Top accent bar */}
@@ -137,17 +138,17 @@ export default function DashboardPanel({ isOpen, onClose }: DashboardPanelProps)
                 <p style={{ fontSize: "11px", fontWeight: "700", color: "#8b7d6b", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 10px 0" }}>Distribución por Género</p>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
                   <span style={{ fontSize: "11px", color: "#2c1e0f", display: "flex", alignItems: "center", gap: "5px" }}>
-                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#9b59b6", display: "inline-block" }} />
+                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#8e6f3e", display: "inline-block" }} />
                     Mujeres: {stats.distribucionGenero[0].cantidad.toLocaleString("es-CO")} ({stats.distribucionGenero[0].porcentaje}%)
                   </span>
                   <span style={{ fontSize: "11px", color: "#2c1e0f", display: "flex", alignItems: "center", gap: "5px" }}>
-                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#3498db", display: "inline-block" }} />
+                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#4a7c59", display: "inline-block" }} />
                     Hombres: {stats.distribucionGenero[1].cantidad.toLocaleString("es-CO")} ({stats.distribucionGenero[1].porcentaje}%)
                   </span>
                 </div>
                 <div style={{ height: "8px", borderRadius: "99px", background: "#f0ece4", overflow: "hidden", display: "flex" }}>
-                  <div style={{ width: `${stats.distribucionGenero[0].porcentaje}%`, background: "#9b59b6" }} />
-                  <div style={{ flex: 1, background: "#3498db" }} />
+                  <div style={{ width: `${stats.distribucionGenero[0].porcentaje}%`, background: "#8e6f3e" }} />
+                  <div style={{ flex: 1, background: "#4a7c59" }} />
                 </div>
               </div>
 

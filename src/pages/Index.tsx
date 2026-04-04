@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
+import { AnimatePresence } from "framer-motion";
 import GISHeader from "@/components/gis/GISHeader";
-import MapView from "@/components/gis/MapView";
+import MapView, { DirectionStep } from "@/components/gis/MapView";
 import { BASE_MAPS, BaseMapKey } from "@/data/base-maps";
 import LayerPanel from "@/components/gis/LayerPanel";
 import DashboardPanel from "@/components/gis/DashboardPanel";
@@ -8,6 +9,8 @@ import MapToolbar from "@/components/gis/MapToolbar";
 import FeatureInfoPanel from "@/components/gis/FeatureInfoPanel";
 import LegendPanel from "@/components/gis/LegendPanel";
 import MapStatusBar from "@/components/gis/MapStatusBar";
+import DirectionsPanel from "@/components/gis/DirectionsPanel";
+import RoutingHelpTip from "@/components/gis/RoutingHelpTip";
 import { LAYERS_CONFIG, LayerConfig, OCANA_ZOOM, comunasGeoJSON, barriosGeoJSON, educacionGeoJSON, saludGeoJSON, gobiernoGeoJSON, proyectosGeoJSON } from "@/data/ocana-geodata";
 import { useToast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -27,6 +30,9 @@ const Index = () => {
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [measureDistance, setMeasureDistance] = useState<number | null>(null);
   const [clearMeasureTrigger, setClearMeasureTrigger] = useState(0);
+  const [isRouting, setIsRouting] = useState(false);
+  const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number; steps: DirectionStep[] } | null>(null);
+  const [clearRouteTrigger, setClearRouteTrigger] = useState(0);
   const { toast } = useToast();
 
   const toggleLayer = useCallback((id: string) => {
@@ -139,11 +145,37 @@ const Index = () => {
     });
   }, [toast]);
 
+  const handleToggleRouting = useCallback(() => {
+    if (isRouting) {
+      // Desactivar → limpiar ruta
+      setClearRouteTrigger(prev => prev + 1);
+      setRouteInfo(null);
+      setIsRouting(false);
+    } else {
+      // Activar → primero obtener ubicación, luego activar modo routing
+      setLocateTrigger(prev => prev + 1);
+      setIsRouting(true);
+      toast({
+        title: "Trazar Ruta",
+        description: "Haz clic en el mapa para elegir el destino.",
+      });
+    }
+  }, [isRouting, toast]);
+
+  const handleClearRoute = useCallback(() => {
+    setClearRouteTrigger(prev => prev + 1);
+    setRouteInfo(null);
+    setIsRouting(false);
+  }, []);
+
   const activeLayers = layers.filter(l => l.visible).length;
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-background">
       <GISHeader onFeatureSelect={setSearchTarget} />
+
+      {/* Routing Help Tip */}
+      <RoutingHelpTip />
 
       <div className="flex-1 relative">
         {/* Toolbar - hidden on mobile when dashboard is open */}
@@ -164,9 +196,11 @@ const Index = () => {
           onExport={handleExport}
           onLocateMe={handleLocateMe}
           onMeasure={handleMeasure}
+          onToggleRouting={handleToggleRouting}
           layersOpen={layersPanelOpen}
           dashboardOpen={dashboardOpen}
           isMeasuring={isMeasuring}
+          isRouting={isRouting}
           baseMap={baseMap}
           onBaseMapChange={setBaseMap}
         />}
@@ -199,6 +233,9 @@ const Index = () => {
           isMeasuring={isMeasuring}
           onMeasureUpdate={setMeasureDistance}
           clearMeasureTrigger={clearMeasureTrigger}
+          isRouting={isRouting}
+          onRouteFound={setRouteInfo}
+          clearRouteTrigger={clearRouteTrigger}
         />
 
         {/* Measure Clear Button */}
@@ -220,6 +257,18 @@ const Index = () => {
           feature={selectedFeature}
           onClose={() => setSelectedFeature(null)}
         />
+
+        {/* Directions Panel */}
+        <AnimatePresence>
+          {routeInfo && (
+            <DirectionsPanel
+              distance={routeInfo.distance}
+              duration={routeInfo.duration}
+              steps={routeInfo.steps}
+              onClear={handleClearRoute}
+            />
+          )}
+        </AnimatePresence>
 
         {/* Legend */}
         <LegendPanel layers={layers} onToggleLayer={toggleLayer} />

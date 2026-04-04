@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Layers, BarChart3, Ruler, Printer, Download,
-  Maximize, LocateFixed, Map as MapIcon, Info,
+  Maximize, LocateFixed, Map as MapIcon, Navigation,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BASE_MAPS, BaseMapKey } from "@/data/base-maps";
@@ -13,11 +13,13 @@ interface MapToolbarProps {
   onZoomToExtent?: () => void;
   onLocateMe?: () => void;
   onMeasure?: () => void;
+  onToggleRouting?: () => void;
   onPrint?: () => void;
   onExport?: () => void;
   layersOpen: boolean;
   dashboardOpen: boolean;
   isMeasuring?: boolean;
+  isRouting?: boolean;
   baseMap: BaseMapKey;
   onBaseMapChange: (key: BaseMapKey) => void;
 }
@@ -36,11 +38,13 @@ export default function MapToolbar({
   onZoomToExtent,
   onLocateMe,
   onMeasure,
+  onToggleRouting,
   onPrint,
   onExport,
   layersOpen,
   dashboardOpen,
   isMeasuring,
+  isRouting,
   baseMap,
   onBaseMapChange,
 }: MapToolbarProps) {
@@ -82,12 +86,11 @@ export default function MapToolbar({
           label="Mi Ubicación"
           onClick={onLocateMe}
         />
-
-        <div className="w-6 h-px my-0.5" style={{ background: "rgba(74, 124, 89, 0.15)" }} />
-
         <IconBtn
-          icon={<Info className="w-[17px] h-[17px]" />}
-          label="Información"
+          icon={<Navigation className="w-[17px] h-[17px]" />}
+          label="Trazar Ruta"
+          onClick={onToggleRouting}
+          active={isRouting}
         />
 
         {/* Base Map Picker Popover */}

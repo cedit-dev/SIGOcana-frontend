@@ -142,6 +142,15 @@
   }
 }
 
+/* GPU layer hints for continuously animated elements */
+[style*="heroFloat"],
+[style*="floatPin"],
+[style*="pinPulse"],
+[style*="marker-pulse"],
+[style*="status-blink"] {
+  will-change: transform, opacity;
+}
+
 /* Hero illustration float — CSS only, GPU-composited */
 @keyframes heroFloat {
 
@@ -384,6 +393,11 @@
   border-radius: 8px 0 0 0 !important;
   padding: 2px 8px !important;
   color: #999 !important;
+}
+
+/* Measure labels — smooth fade-in */
+.measure-label {
+  transition: opacity 200ms ease-in;
 }
 
 /* Print styles */

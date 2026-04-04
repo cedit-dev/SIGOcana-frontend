@@ -1,4 +1,4 @@
-import { Phone } from "lucide-react";
+import { Mail } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 
 const FOOTER_LINKS = [
@@ -26,7 +26,7 @@ export default function Footer() {
                         transition={{ ...transition, delay: 0.1 }}
                     >
                         <div className="flex items-center gap-2.5 mb-4">
-                            <span className="text-base font-extrabold text-white/90">SIGOCAÑA</span>
+                            <span className="text-base font-extrabold text-white/90">SIGOcaña</span>
                         </div>
                         <p className="text-sm text-white/50 leading-relaxed max-w-xs" style={{ lineHeight: 1.7 }}>
                             Sistema de Información Geográfica del municipio de Ocaña, Norte de Santander.
@@ -76,7 +76,7 @@ export default function Footer() {
                             href="mailto:contacto@sigocana.gov.co"
                             className="inline-flex items-center gap-2 text-sm text-[#6ba368] hover:text-[#4bb89a] transition-colors duration-200 cursor-pointer"
                         >
-                            <Phone className="w-3.5 h-3.5" />
+                            <Mail className="w-3.5 h-3.5" />
                             contacto@sigocana.gov.co
                         </a>
                     </motion.div>

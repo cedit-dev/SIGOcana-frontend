@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import BlurText from "@/components/BlurText";
 import {
   ChevronDown,
   ChevronRight,
@@ -180,8 +179,8 @@ export default function LayerPanel({
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-[#4a7c59]" />
-                <h2 className="font-semibold text-lg text-[#2a2a2a] min-w-[60px] h-[28px]">
-                  <BlurText text="Capas" animateBy="letters" delay={30} stepDuration={0.2} />
+                <h2 className="font-semibold text-lg text-[#2a2a2a]">
+                  Capas
                 </h2>
                 <span className="gis-badge bg-[#4a7c59]/10 text-[#4a7c59]">
                   {activeCount} activas

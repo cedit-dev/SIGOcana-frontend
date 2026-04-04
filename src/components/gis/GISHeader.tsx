@@ -1,4 +1,4 @@
-import { MapPin, Search, User, Settings, Bell, Home, MapPinOff } from "lucide-react";
+import { MapPin, Search, User, Home } from "lucide-react";
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -87,7 +87,7 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
             className="text-[14px] font-extrabold leading-none tracking-tight"
             colors={["#4a7c59", "#2d8a6e", "#5d9a6e"]}
           >
-            SigOcaña
+            SIGOcaña
           </GradientText>
           <div className="flex items-center gap-1.5 mt-0.5">
             <div className="w-1.5 h-1.5 rounded-full bg-[#4a7c59]" style={{ animation: "marker-pulse 2s infinite" }} />
@@ -163,8 +163,6 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
 
         <div className="flex items-center gap-0.5">
           <HeaderBtn icon={<Home className="w-[15px] h-[15px]" />} label="Inicio" onClick={() => navigate("/")} />
-          <HeaderBtn icon={<Bell className="w-[15px] h-[15px]" />} label="Notificaciones" />
-          <HeaderBtn icon={<Settings className="w-[15px] h-[15px]" />} label="Configuración" />
 
           <Tooltip>
             <TooltipTrigger asChild>

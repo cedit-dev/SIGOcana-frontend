@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { MapContainer, TileLayer, GeoJSON, ZoomControl, useMap, Marker, Popup, Circle, CircleMarker } from "react-leaflet";
+import { MapContainer, TileLayer, GeoJSON, ZoomControl, useMap, useMapEvents, Marker, Popup, Circle, CircleMarker, Polyline } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
@@ -30,6 +30,12 @@ L.Icon.Default.mergeOptions({
 });
 
 
+export interface DirectionStep {
+  instruction: string;
+  distance: number; // metros
+  duration: number; // segundos
+}
+
 interface MapViewProps {
   layers: LayerConfig[];
   baseMap: BaseMapKey;
@@ -42,6 +48,9 @@ interface MapViewProps {
   isMeasuring?: boolean;
   onMeasureUpdate?: (distance: number) => void;
   clearMeasureTrigger?: number;
+  isRouting?: boolean;
+  onRouteFound?: (info: { distance: number; duration: number; steps: DirectionStep[] }) => void;
+  clearRouteTrigger?: number;
 }
 
 // Component to change base map dynamically
@@ -125,21 +134,21 @@ const PROP_LABELS: Record<string, string> = {
 };
 
 const ESTRATO_COLORS: Record<number, string> = {
-  1: "#E74C3C",
-  2: "#E67E22",
-  3: "#F1C40F",
-  4: "#2ECC71",
-  5: "#3498DB",
-  6: "#9B59B6",
+  1: "#fde0c5",  // crema clara — estrato bajo
+  2: "#f5a96e",  // ámbar pálido
+  3: "#d4804a",  // ámbar-marrón medio
+  4: "#a05c30",  // marrón cálido
+  5: "#5a8a68",  // verde forestal suave
+  6: "#3a6b50",  // verde profundo — estrato alto
 };
 
 const USO_COLORS: Record<string, string> = {
-  "Urbano": "#E67E22",
-  "Agrícola": "#27AE60",
-  "Protección Ambiental": "#2ECC71",
+  "Urbano": "#c4883a",          // ámbar del brand
+  "Agrícola": "#4a7c59",        // verde primario
+  "Protección Ambiental": "#2d8a6e", // teal del brand
 };
 
-function MapController({ zoomToExtentTrigger, locateMeTrigger }: { zoomToExtentTrigger?: number; locateMeTrigger?: number }) {
+function MapController({ zoomToExtentTrigger, locateMeTrigger, onLocationFound }: { zoomToExtentTrigger?: number; locateMeTrigger?: number; onLocationFound?: (latlng: L.LatLng) => void }) {
   const map = useMap();
   const [userLocation, setUserLocation] = useState<L.LatLng | null>(null);
   const [accuracy, setAccuracy] = useState<number>(0);
@@ -152,8 +161,8 @@ function MapController({ zoomToExtentTrigger, locateMeTrigger }: { zoomToExtentT
 
   useEffect(() => {
     if (locateMeTrigger) {
-      map.locate({ 
-        setView: false, 
+      map.locate({
+        setView: false,
         enableHighAccuracy: true,
         timeout: 15000,
         maximumAge: 0 // Force fresh location, don't use cached data
@@ -166,6 +175,7 @@ function MapController({ zoomToExtentTrigger, locateMeTrigger }: { zoomToExtentT
       setUserLocation(e.latlng);
       setAccuracy(e.accuracy);
       map.flyTo(e.latlng, 17, { duration: 1.5 });
+      onLocationFound?.(e.latlng);
     };
 
     const handleLocationError = (e: L.ErrorEvent) => {
@@ -174,12 +184,12 @@ function MapController({ zoomToExtentTrigger, locateMeTrigger }: { zoomToExtentT
 
     map.on("locationfound", handleLocationFound);
     map.on("locationerror", handleLocationError);
-    
+
     return () => {
       map.off("locationfound", handleLocationFound);
       map.off("locationerror", handleLocationError);
     };
-  }, [map]);
+  }, [map, onLocationFound]);
 
   return userLocation ? (
     <>
@@ -239,6 +249,137 @@ function SearchController({ feature }: { feature: GeoJSON.Feature | null }) {
       map.flyTo(coords, 16, { duration: 1 });
     }
   }, [feature, map]);
+
+  return null;
+}
+
+function RoutingController({
+  enabled,
+  userLocation,
+  onRouteFound,
+  clearTrigger,
+}: {
+  enabled: boolean;
+  userLocation: L.LatLng | null;
+  onRouteFound: (info: { distance: number; duration: number; steps: DirectionStep[] }) => void;
+  clearTrigger?: number;
+}) {
+  const map = useMap();
+  const routeLayerRef = useRef<L.Polyline | null>(null);
+
+  // Cambiar cursor cuando está en modo routing
+  useEffect(() => {
+    if (enabled) {
+      map.getContainer().style.cursor = "crosshair";
+    } else {
+      map.getContainer().style.cursor = "";
+      if (routeLayerRef.current) {
+        routeLayerRef.current.remove();
+        routeLayerRef.current = null;
+      }
+    }
+  }, [enabled, map]);
+
+  // Limpiar ruta cuando clearTrigger cambia
+  useEffect(() => {
+    if (routeLayerRef.current) {
+      routeLayerRef.current.remove();
+      routeLayerRef.current = null;
+    }
+  }, [clearTrigger]);
+
+  // Convertir instrucciones OSRM a español
+  const translateInstruction = (osrmInstruction: string, maneuver: string): string => {
+    const translations: Record<string, string> = {
+      "Head": "Dirígete",
+      "Turn": "Gira",
+      "left": "a la izquierda",
+      "right": "a la derecha",
+      "sharp left": "fuertemente a la izquierda",
+      "sharp right": "fuertemente a la derecha",
+      "slight left": "ligeramente a la izquierda",
+      "slight right": "ligeramente a la derecha",
+      "straight": "recto",
+      "merge": "Incorpórate",
+      "continue": "Continúa",
+      "arrive": "Llegas al destino",
+      "depart": "Comienza",
+      "roundabout": "Toma la salida de la rotonda",
+      "exit": "Toma la salida",
+    };
+
+    let result = osrmInstruction;
+    Object.entries(translations).forEach(([en, es]) => {
+      result = result.replace(new RegExp(en, "gi"), es);
+    });
+    return result.length > 0 ? result : "Continúa por esta vía";
+  };
+
+  // Click handler para seleccionar destino
+  useMapEvents({
+    click: async (e) => {
+      if (!enabled || !userLocation) return;
+
+      const origin = `${userLocation.lng},${userLocation.lat}`;
+      const dest = `${e.latlng.lng},${e.latlng.lat}`;
+      // Añadir steps=true para obtener instrucciones paso a paso
+      const url = `https://router.project-osrm.org/route/v1/driving/${origin};${dest}?overview=full&geometries=geojson&steps=true&annotations=distance,duration`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.code !== "Ok") return;
+
+        const route = data.routes[0];
+        const coords: [number, number][] = route.geometry.coordinates.map(
+          ([lng, lat]: [number, number]) => [lat, lng]
+        );
+        const distance = route.distance; // metros
+        const duration = route.duration; // segundos
+
+        // Extraer instrucciones paso a paso
+        const steps: DirectionStep[] = [];
+        if (route.legs && route.legs.length > 0) {
+          route.legs.forEach((leg: any) => {
+            if (leg.steps && leg.steps.length > 0) {
+              leg.steps.forEach((step: any) => {
+                const instruction = translateInstruction(
+                  step.maneuver?.instruction || "",
+                  step.maneuver?.type || ""
+                );
+
+                // Solo agregar si la instrucción es significativa
+                if (instruction.length > 0) {
+                  steps.push({
+                    instruction,
+                    distance: step.distance,
+                    duration: step.duration,
+                  });
+                }
+              });
+            }
+          });
+        }
+
+        // Limpiar ruta anterior
+        if (routeLayerRef.current) {
+          routeLayerRef.current.remove();
+        }
+
+        // Dibujar nueva ruta
+        routeLayerRef.current = L.polyline(coords, {
+          color: "#4a7c59",
+          weight: 5,
+          opacity: 0.85,
+        }).addTo(map);
+
+        map.fitBounds(routeLayerRef.current.getBounds(), { padding: [60, 60] });
+        onRouteFound({ distance, duration, steps });
+      } catch (err) {
+        console.error("Error calculando ruta:", err);
+      }
+    },
+  });
 
   return null;
 }
@@ -318,16 +459,16 @@ function MeasureController({ enabled, onDistanceUpdate, clearTrigger }: { enable
             icon: L.divIcon({
               className: "measure-label",
               html: `<span style="
-                background: rgba(0,0,0,0.85);
-                color: #ffff00;
+                background: rgba(235,228,218,0.93);
+                color: #2c1e0f;
                 padding: 3px 8px;
                 border-radius: 6px;
                 font-size: 11px;
                 font-weight: 700;
                 white-space: nowrap;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
                 font-family: 'JetBrains Mono', monospace;
-                border: 1px solid rgba(255,255,0,0.3);
+                border: 1px solid rgba(74,124,89,0.2);
               ">${formatDist(segDist)}</span>`,
               iconSize: [0, 0],
               iconAnchor: [0, 0],
@@ -381,8 +522,9 @@ function MeasureController({ enabled, onDistanceUpdate, clearTrigger }: { enable
   return null;
 }
 
-function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateMeTrigger, onZoomChange, onMouseMove, searchTarget, isMeasuring, onMeasureUpdate, clearMeasureTrigger }: MapViewProps) {
+function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateMeTrigger, onZoomChange, onMouseMove, searchTarget, isMeasuring, onMeasureUpdate, clearMeasureTrigger, isRouting, onRouteFound, clearRouteTrigger }: MapViewProps) {
   const visibleLayers = layers.filter(l => l.visible);
+  const [userLocation, setUserLocation] = useState<L.LatLng | null>(null);
 
   const getStyle = (layerId: string, color: string, opacity: number) => {
     return (feature?: GeoJSON.Feature) => {
@@ -432,7 +574,7 @@ function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateM
       maxZoom={20}
       zoomControl={false}
       className="w-full h-full"
-      style={{ background: "#e8f0fe" }}
+      style={{ background: "#f0ede8" }}
     >
       <ZoomControl position="bottomleft" />
       <BaseMapLayer baseMap={baseMap} />
@@ -440,6 +582,7 @@ function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateM
       <MapController
         zoomToExtentTrigger={zoomToExtentTrigger}
         locateMeTrigger={locateMeTrigger}
+        onLocationFound={setUserLocation}
       />
 
       <MapEventsTracker onZoomChange={onZoomChange} onMouseMove={onMouseMove} />
@@ -447,6 +590,8 @@ function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateM
       <SearchController feature={searchTarget || null} />
 
       {isMeasuring && <MeasureController enabled={isMeasuring} onDistanceUpdate={onMeasureUpdate || (() => { })} clearTrigger={clearMeasureTrigger} />}
+
+      {isRouting && userLocation && <RoutingController enabled={isRouting} userLocation={userLocation} onRouteFound={onRouteFound || (() => { })} clearTrigger={clearRouteTrigger} />}
 
       {visibleLayers.map(layer => {
         const data = GEOJSON_MAP[layer.id];
