@@ -11,6 +11,7 @@ import LegendPanel from "@/components/gis/LegendPanel";
 import MapStatusBar from "@/components/gis/MapStatusBar";
 import DirectionsPanel from "@/components/gis/DirectionsPanel";
 import RoutingHelpTip from "@/components/gis/RoutingHelpTip";
+import RoutingLoadingIndicator from "@/components/gis/RoutingLoadingIndicator";
 import { LAYERS_CONFIG, LayerConfig, OCANA_ZOOM, comunasGeoJSON, barriosGeoJSON, educacionGeoJSON, saludGeoJSON, gobiernoGeoJSON, proyectosGeoJSON } from "@/data/ocana-geodata";
 import { useToast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -33,6 +34,7 @@ const Index = () => {
   const [isRouting, setIsRouting] = useState(false);
   const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number; steps: DirectionStep[] } | null>(null);
   const [clearRouteTrigger, setClearRouteTrigger] = useState(0);
+  const [isLoadingRoute, setIsLoadingRoute] = useState(false);
   const { toast } = useToast();
 
   const toggleLayer = useCallback((id: string) => {
@@ -235,6 +237,10 @@ const Index = () => {
           clearMeasureTrigger={clearMeasureTrigger}
           isRouting={isRouting}
           onRouteFound={setRouteInfo}
+          onLoadingRouteChange={setIsLoadingRoute}
+          onRouteError={(msg) => {
+            toast({ title: "Error de Ruta", description: msg, variant: "destructive" });
+          }}
           clearRouteTrigger={clearRouteTrigger}
         />
 
@@ -268,6 +274,11 @@ const Index = () => {
               onClear={handleClearRoute}
             />
           )}
+        </AnimatePresence>
+
+        {/* Loading Indicator */}
+        <AnimatePresence>
+          {isLoadingRoute && <RoutingLoadingIndicator onCancel={handleClearRoute} />}
         </AnimatePresence>
 
         {/* Legend */}

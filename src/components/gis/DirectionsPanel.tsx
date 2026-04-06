@@ -1,11 +1,13 @@
 import { motion } from "framer-motion";
-import { ChevronDown, ChevronUp, Navigation, MapPin, X } from "lucide-react";
-import { useState } from "react";
+import { ChevronDown, ChevronUp, Navigation, MapPin, X, ArrowRight, RotateCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useMemo } from "react";
 
 export interface DirectionStep {
   instruction: string;
   distance: number; // metros
   duration: number; // segundos
+  maneuver?: string; // tipo de giro: "left", "right", "straight", "sharp left", etc.
+  name?: string; // nombre de la calle
 }
 
 interface DirectionsPanelProps {
@@ -31,6 +33,24 @@ export default function DirectionsPanel({
     setIsCollapsed(!isCollapsed);
     onCollapse?.(!isCollapsed);
   };
+
+  // Obtener icono de dirección basado en el tipo de maniobra
+  const getDirectionIcon = useMemo(() => {
+    return (maneuver?: string) => {
+      if (!maneuver) return <ArrowRight className="w-4 h-4 text-[#4a7c59]" />;
+
+      const m = maneuver.toLowerCase();
+      if (m.includes("left")) {
+        return <ChevronLeft className="w-4 h-4 text-[#4a7c59]" />;
+      } else if (m.includes("right")) {
+        return <ChevronRight className="w-4 h-4 text-[#4a7c59]" />;
+      } else if (m.includes("roundabout") || m.includes("rotonda")) {
+        return <RotateCw className="w-4 h-4 text-[#4a7c59]" />;
+      } else {
+        return <ArrowRight className="w-4 h-4 text-[#4a7c59]" />;
+      }
+    };
+  }, []);
 
   return (
     <motion.div
@@ -113,36 +133,37 @@ export default function DirectionsPanel({
               const stepMins = Math.round(step.duration / 60);
 
               return (
-                <motion.div
+                <div
                   key={idx}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.05 }}
                   className="flex gap-3 pb-3 border-b border-black/5 last:border-0"
                 >
-                  <div className="flex flex-col items-center pt-1">
-                    <div className="w-3 h-3 rounded-full bg-[#4a7c59]" />
+                  <div className="flex flex-col items-center pt-1 flex-shrink-0">
+                    <div className="w-5 h-5 rounded-full bg-[#4a7c59]/10 flex items-center justify-center border border-[#4a7c59]/30">
+                      {getDirectionIcon(step.maneuver)}
+                    </div>
                     {idx < steps.length - 1 && (
                       <div className="w-px h-6 bg-[#4a7c59]/40 my-1" />
                     )}
                   </div>
-                  <div className="flex-1">
-                    <p className="text-[12px] font-medium text-[#2c1e0f] leading-tight">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-medium text-[#2c1e0f] leading-tight break-words">
                       {step.instruction}
                     </p>
-                    <div className="flex gap-3 mt-1">
-                      <span className="text-[10px] text-[#8b7d6b] flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
+                    {step.name && (
+                      <p className="text-[11px] text-[#4a7c59] font-semibold mt-0.5">
+                        → {step.name}
+                      </p>
+                    )}
+                    <div className="flex gap-3 mt-1 text-[10px] text-[#8b7d6b]">
+                      <span className="flex items-center gap-1">
                         {stepKm} km
                       </span>
                       {stepMins > 0 && (
-                        <span className="text-[10px] text-[#8b7d6b]">
-                          ~{stepMins} min
-                        </span>
+                        <span>~{stepMins} min</span>
                       )}
                     </div>
                   </div>
-                </motion.div>
+                </div>
               );
             })}
 

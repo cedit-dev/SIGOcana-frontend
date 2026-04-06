@@ -1,5 +1,5 @@
-import { MapPin, Search, User, Home } from "lucide-react";
-import { useState, useCallback } from "react";
+import { MapPin, Search, User, Home, Loader } from "lucide-react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -12,48 +12,137 @@ interface GISHeaderProps {
   onFeatureSelect?: (feature: GeoJSON.Feature) => void;
 }
 
+// Crear índice preconstruido de nombres para búsqueda ultrarrápida
+const buildSearchIndex = () => {
+  const index: { nombre: string; feature: GeoJSON.Feature }[] = [];
+  const allGeoJSONs = [
+    comunasGeoJSON,
+    barriosGeoJSON,
+    educacionGeoJSON,
+    saludGeoJSON,
+    gobiernoGeoJSON,
+    proyectosGeoJSON,
+  ];
+
+  allGeoJSONs.forEach((geoJSON) => {
+    geoJSON.features.forEach((feature) => {
+      const nombre = feature.properties?.nombre || "";
+      if (nombre) {
+        index.push({ nombre: nombre.toLowerCase(), feature });
+      }
+    });
+  });
+
+  return index;
+};
+
+const SEARCH_INDEX = buildSearchIndex();
+
 export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeoJSON.Feature[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
+  const debounceTimeoutRef = useRef<NodeJS.Timeout>();
 
-  const searchFeatures = useCallback((q: string) => {
+  // Búsqueda local rápida en el índice
+  const searchLocal = useCallback((q: string) => {
     if (!q.trim()) {
       setResults([]);
-      setShowDropdown(false);
       return;
     }
 
     const lowerQ = q.toLowerCase();
-    const allGeoJSONs = [
-      comunasGeoJSON,
-      barriosGeoJSON,
-      educacionGeoJSON,
-      saludGeoJSON,
-      gobiernoGeoJSON,
-      proyectosGeoJSON,
-    ];
+    const localResults = SEARCH_INDEX.filter(
+      (item) =>
+        item.nombre.includes(lowerQ) ||
+        item.nombre.startsWith(lowerQ)
+    )
+      .slice(0, 8)
+      .map((item) => item.feature);
 
-    const foundFeatures: GeoJSON.Feature[] = [];
-    for (const geoJSON of allGeoJSONs) {
-      for (const feature of geoJSON.features) {
-        const nombre = (feature.properties?.nombre || "").toLowerCase();
-        if (nombre.includes(lowerQ) && foundFeatures.length < 6) {
-          foundFeatures.push(feature);
-        }
-      }
-    }
-
-    setResults(foundFeatures);
-    setShowDropdown(foundFeatures.length > 0);
+    setResults(localResults);
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setQuery(value);
-    searchFeatures(value);
-  };
+  // Búsqueda en Nominatim API (geocodificación)
+  const searchNominatim = useCallback(async (q: string) => {
+    try {
+      setIsSearching(true);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          q + ", Ocaña, Colombia"
+        )}&limit=3&timeout=5`
+      );
+      const data = await response.json();
+
+      if (data.length > 0) {
+        const nominatimResults = data.map((item: any) => ({
+          type: "Feature" as const,
+          geometry: {
+            type: "Point" as const,
+            coordinates: [parseFloat(item.lon), parseFloat(item.lat)],
+          },
+          properties: {
+            nombre: item.name,
+            tipo: "Ubicación (búsqueda)",
+            display_name: item.display_name,
+          },
+        }));
+
+        // Combinar resultados locales + Nominatim
+        setResults((prev) => {
+          const combined = [...prev, ...nominatimResults];
+          const unique = Array.from(
+            new Map(combined.map((item) => [item.properties?.nombre, item])).values()
+          ).slice(0, 8);
+          return unique;
+        });
+      }
+      setIsSearching(false);
+    } catch (err) {
+      console.error("Error en búsqueda Nominatim:", err);
+      setIsSearching(false);
+    }
+  }, []);
+
+  // Debounce para búsqueda
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setQuery(value);
+
+      // Limpiar timeout anterior
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+
+      if (!value.trim()) {
+        setResults([]);
+        setShowDropdown(false);
+        return;
+      }
+
+      // Búsqueda local inmediata
+      searchLocal(value);
+      setShowDropdown(true);
+
+      // Búsqueda en Nominatim después de 400ms
+      debounceTimeoutRef.current = setTimeout(() => {
+        searchNominatim(value);
+      }, 400);
+    },
+    [searchLocal, searchNominatim]
+  );
+
+  // Limpiar timeout al desmontar
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleSelectFeature = (feature: GeoJSON.Feature) => {
     onFeatureSelect?.(feature);
@@ -117,31 +206,44 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
           />
 
           {/* Search Results Dropdown */}
-          {showDropdown && results.length > 0 && (
+          {showDropdown && (results.length > 0 || isSearching) && (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
-              className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#e0e0e0] rounded-xl shadow-lg z-50 overflow-hidden"
+              className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#e0e0e0] rounded-xl shadow-lg z-50 overflow-hidden max-h-96 overflow-y-auto"
             >
               {results.map((feature, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleSelectFeature(feature)}
-                  className="w-full px-4 py-3 text-left flex items-center gap-2.5 hover:bg-[#f5f5f5] transition-colors text-sm border-b border-[#f0f0f0] last:border-b-0"
+                  className="w-full px-4 py-2.5 text-left flex items-center gap-2.5 hover:bg-[#f9f9f9] transition-colors text-sm border-b border-[#f5f5f5] last:border-b-0"
                 >
                   <MapPin className="w-3.5 h-3.5 text-[#4a7c59] flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-[#1a1a1a] truncate">
+                    <div className="font-semibold text-[#1a1a1a] text-xs truncate">
                       {feature.properties?.nombre || "Sin nombre"}
                     </div>
-                    <div className="text-[11px] text-[#888] truncate">
-                      {feature.properties?.tipo || feature.properties?.categoria || "Ubicación"}
+                    <div className="text-[10px] text-[#999] truncate">
+                      {feature.properties?.tipo || "Ubicación"}
                     </div>
                   </div>
                 </button>
               ))}
+
+              {isSearching && (
+                <div className="px-4 py-3 flex items-center gap-2 text-[12px] text-[#666] bg-[#f9f9f9]">
+                  <Loader className="w-3 h-3 animate-spin text-[#4a7c59]" />
+                  Buscando en mapas...
+                </div>
+              )}
+
+              {query && results.length === 0 && !isSearching && (
+                <div className="px-4 py-3 text-center text-[11px] text-[#999]">
+                  No se encontraron resultados
+                </div>
+              )}
             </motion.div>
           )}
         </div>

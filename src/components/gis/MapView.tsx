@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { MapContainer, TileLayer, GeoJSON, ZoomControl, useMap, useMapEvents, Marker, Popup, Circle, CircleMarker, Polyline } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import {
   OCANA_CENTER, OCANA_ZOOM, LayerConfig,
   comunasGeoJSON, barriosGeoJSON, educacionGeoJSON,
@@ -34,6 +36,8 @@ export interface DirectionStep {
   instruction: string;
   distance: number; // metros
   duration: number; // segundos
+  maneuver?: string; // tipo de giro: "left", "right", "straight", etc.
+  name?: string; // nombre de la calle
 }
 
 interface MapViewProps {
@@ -50,6 +54,8 @@ interface MapViewProps {
   clearMeasureTrigger?: number;
   isRouting?: boolean;
   onRouteFound?: (info: { distance: number; duration: number; steps: DirectionStep[] }) => void;
+  onLoadingRouteChange?: (loading: boolean) => void;
+  onRouteError?: (msg: string) => void;
   clearRouteTrigger?: number;
 }
 
@@ -59,7 +65,7 @@ function BaseMapLayer({ baseMap }: { baseMap: BaseMapKey }) {
   return <TileLayer key={baseMap} url={config.url} attribution={config.attribution} />;
 }
 
-// Custom colored circle marker for points
+// Custom colored circle marker for points with clustering
 function PointLayer({
   data, color, opacity, onFeatureClick, icon
 }: {
@@ -69,39 +75,105 @@ function PointLayer({
   icon: string;
   onFeatureClick?: (f: GeoJSON.Feature) => void;
 }) {
-  return (
-    <>
-      {data.features.map((f, i) => {
+  const map = useMap();
+  const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
+
+  // Usar clustering para capas con muchos features
+  useEffect(() => {
+    if (data.features.length > 50) {
+      // Crear grupo de clustering
+      if (!clusterRef.current) {
+        const cluster = L.markerClusterGroup();
+        clusterRef.current = cluster;
+        map.addLayer(cluster);
+      }
+
+      // Limpiar y agregar nuevos markers
+      clusterRef.current.clearLayers();
+      data.features.forEach((f) => {
         const coords = (f.geometry as GeoJSON.Point).coordinates;
-        return (
-          <CircleMarker
-            key={i}
-            center={[coords[1], coords[0]]}
-            radius={8}
-            pathOptions={{
-              fillColor: color,
-              color: "#fff",
-              weight: 2,
-              fillOpacity: opacity,
-              opacity: 1,
-            }}
-            eventHandlers={{
-              click: () => onFeatureClick?.(f),
-            }}
-          >
-            <Popup className="custom-popup">
-              <div>
-                <h3>{icon} {f.properties?.nombre}</h3>
-                {Object.entries(f.properties || {}).filter(([k]) => k !== "nombre").map(([k, v]) => (
-                  <div className="attr-row" key={k}>
-                    <span className="attr-label">{PROP_LABELS[k] ?? k.replace(/_/g, " ")}</span>
-                    <span className="attr-value">{v === null || v === undefined ? "—" : String(v)}</span>
-                  </div>
-                ))}
-              </div>
-            </Popup>
-          </CircleMarker>
-        );
+        const marker = L.circleMarker([coords[1], coords[0]], {
+          radius: 8,
+          fillColor: color,
+          color: "#fff",
+          weight: 2,
+          fillOpacity: opacity,
+          opacity: 1,
+        });
+
+        const popupHTML = `
+          <div class="custom-popup">
+            <h3>${icon} ${f.properties?.nombre || "Sin nombre"}</h3>
+            ${Object.entries(f.properties || {})
+              .filter(([k]) => k !== "nombre")
+              .map(([k, v]) => {
+                const label = PROP_LABELS[k] ?? k.replace(/_/g, " ");
+                const val = v === null || v === undefined ? "—" : String(v);
+                return `<div class="attr-row"><span class="attr-label">${label}</span><span class="attr-value">${val}</span></div>`;
+              })
+              .join("")}
+          </div>
+        `;
+
+        marker.bindPopup(popupHTML);
+        marker.on("click", () => onFeatureClick?.(f));
+        clusterRef.current.addLayer(marker);
+      });
+    } else {
+      // Para capas pequeñas, renderizar sin clustering
+      if (clusterRef.current && map.hasLayer(clusterRef.current)) {
+        map.removeLayer(clusterRef.current);
+        clusterRef.current = null;
+      }
+    }
+
+    return () => {
+      if (clusterRef.current && map.hasLayer(clusterRef.current)) {
+        map.removeLayer(clusterRef.current);
+        clusterRef.current = null;
+      }
+    };
+  }, [data, color, opacity, map, icon, onFeatureClick]);
+
+  // Si usa clustering (>50 features), usar Leaflet directo, no React components
+  if (data.features.length > 50) {
+    return null; // El clustering se maneja en el useEffect
+  }
+
+  // Para capas pequeñas (sin clustering), renderizar con componentes React
+    return (
+      <>
+        {data.features.map((f, i) => {
+          const coords = (f.geometry as GeoJSON.Point).coordinates;
+          return (
+            <CircleMarker
+              key={i}
+              center={[coords[1], coords[0]]}
+              radius={8}
+              pathOptions={{
+                fillColor: color,
+                color: "#fff",
+                weight: 2,
+                fillOpacity: opacity,
+                opacity: 1,
+              }}
+              eventHandlers={{
+                click: () => onFeatureClick?.(f),
+              }}
+            >
+              <Popup className="custom-popup">
+                <div>
+                  <h3>{icon} {f.properties?.nombre}</h3>
+                  {Object.entries(f.properties || {}).filter(([k]) => k !== "nombre").map(([k, v]) => (
+                    <div className="attr-row" key={k}>
+                      <span className="attr-label">{PROP_LABELS[k] ?? k.replace(/_/g, " ")}</span>
+                      <span className="attr-value">{v === null || v === undefined ? "—" : String(v)}</span>
+                    </div>
+                  ))}
+                </div>
+              </Popup>
+            </CircleMarker>
+          );
       })}
     </>
   );
@@ -257,15 +329,27 @@ function RoutingController({
   enabled,
   userLocation,
   onRouteFound,
+  onLoadingChange,
+  onError,
   clearTrigger,
 }: {
   enabled: boolean;
   userLocation: L.LatLng | null;
   onRouteFound: (info: { distance: number; duration: number; steps: DirectionStep[] }) => void;
+  onLoadingChange?: (loading: boolean) => void;
+  onError?: (msg: string) => void;
   clearTrigger?: number;
 }) {
   const map = useMap();
   const routeLayerRef = useRef<L.Polyline | null>(null);
+  const destinationMarkerRef = useRef<L.Marker | null>(null);
+
+  // Precalentar conexión a BRouter cuando se activa el modo ruta
+  useEffect(() => {
+    if (enabled) {
+      fetch("https://brouter.de/brouter?lonlats=-73.35,8.25|-73.35,8.25&profile=car-fast&alternativeidx=0&format=geojson", { mode: "cors" }).catch(() => {});
+    }
+  }, [enabled]);
 
   // Cambiar cursor cuando está en modo routing
   useEffect(() => {
@@ -277,6 +361,10 @@ function RoutingController({
         routeLayerRef.current.remove();
         routeLayerRef.current = null;
       }
+      if (destinationMarkerRef.current) {
+        destinationMarkerRef.current.remove();
+        destinationMarkerRef.current = null;
+      }
     }
   }, [enabled, map]);
 
@@ -286,97 +374,193 @@ function RoutingController({
       routeLayerRef.current.remove();
       routeLayerRef.current = null;
     }
+    if (destinationMarkerRef.current) {
+      destinationMarkerRef.current.remove();
+      destinationMarkerRef.current = null;
+    }
   }, [clearTrigger]);
 
-  // Convertir instrucciones OSRM a español
-  const translateInstruction = (osrmInstruction: string, maneuver: string): string => {
-    const translations: Record<string, string> = {
-      "Head": "Dirígete",
-      "Turn": "Gira",
-      "left": "a la izquierda",
-      "right": "a la derecha",
-      "sharp left": "fuertemente a la izquierda",
-      "sharp right": "fuertemente a la derecha",
-      "slight left": "ligeramente a la izquierda",
-      "slight right": "ligeramente a la derecha",
-      "straight": "recto",
-      "merge": "Incorpórate",
-      "continue": "Continúa",
-      "arrive": "Llegas al destino",
-      "depart": "Comienza",
-      "roundabout": "Toma la salida de la rotonda",
-      "exit": "Toma la salida",
-    };
+  // Generar instrucciones de navegación a partir de los waypoints de BRouter
+  const buildSteps = useCallback((messages: string[][]): DirectionStep[] => {
+    if (!messages || messages.length < 3) return [];
 
-    let result = osrmInstruction;
-    Object.entries(translations).forEach(([en, es]) => {
-      result = result.replace(new RegExp(en, "gi"), es);
-    });
-    return result.length > 0 ? result : "Continúa por esta vía";
-  };
+    // messages[0] = headers, messages[1..n] = waypoints
+    // Columns: Longitude, Latitude, Elevation, Distance, CostPerKm, ElevCost, TurnCost, NodeCost, InitialCost, WayTags, NodeTags, Time, Energy
+    const waypoints = messages.slice(1);
+    const steps: DirectionStep[] = [];
+
+    for (let i = 0; i < waypoints.length; i++) {
+      const wp = waypoints[i];
+      const dist = parseFloat(wp[3]) || 0; // Distance del segmento
+      const tags = wp[9] || ""; // WayTags
+      const timeSec = parseFloat(wp[11]) || 0;
+      const prevTime = i > 0 ? (parseFloat(waypoints[i - 1][11]) || 0) : 0;
+      const segDuration = timeSec - prevTime;
+
+      // Extraer tipo de vía
+      const highwayMatch = tags.match(/highway=(\w+)/);
+      const surfaceMatch = tags.match(/surface=(\w+)/);
+      const highway = highwayMatch ? highwayMatch[1] : "";
+
+      // Nombre de vía legible
+      const viaNames: Record<string, string> = {
+        primary: "Vía principal",
+        secondary: "Vía secundaria",
+        tertiary: "Vía terciaria",
+        residential: "Calle residencial",
+        service: "Vía de servicio",
+        unclassified: "Calle",
+        trunk: "Carretera",
+        motorway: "Autopista",
+        living_street: "Zona residencial",
+        pedestrian: "Zona peatonal",
+        track: "Camino",
+        path: "Sendero",
+      };
+      const viaName = viaNames[highway] || (highway ? `Vía ${highway}` : "");
+
+      // Calcular dirección de giro usando ángulos entre waypoints
+      let maneuver = "straight";
+      let instruction = "";
+
+      if (i === 0) {
+        instruction = "Comienza el recorrido";
+        maneuver = "depart";
+      } else if (i === waypoints.length - 1) {
+        instruction = "Llegas al destino";
+        maneuver = "arrive";
+      } else {
+        // Calcular ángulo entre segmento anterior y siguiente
+        const prevLng = parseFloat(waypoints[i - 1][0]) / 1e6;
+        const prevLat = parseFloat(waypoints[i - 1][1]) / 1e6;
+        const curLng = parseFloat(wp[0]) / 1e6;
+        const curLat = parseFloat(wp[1]) / 1e6;
+        const nextLng = parseFloat(waypoints[i + 1][0]) / 1e6;
+        const nextLat = parseFloat(waypoints[i + 1][1]) / 1e6;
+
+        const angle1 = Math.atan2(curLng - prevLng, curLat - prevLat);
+        const angle2 = Math.atan2(nextLng - curLng, nextLat - curLat);
+        let turn = ((angle2 - angle1) * 180) / Math.PI;
+        // Normalizar a [-180, 180]
+        while (turn > 180) turn -= 360;
+        while (turn < -180) turn += 360;
+
+        if (turn > 30 && turn <= 90) {
+          instruction = "Gira a la derecha";
+          maneuver = "right";
+        } else if (turn > 90) {
+          instruction = "Gira fuertemente a la derecha";
+          maneuver = "sharp right";
+        } else if (turn < -30 && turn >= -90) {
+          instruction = "Gira a la izquierda";
+          maneuver = "left";
+        } else if (turn < -90) {
+          instruction = "Gira fuertemente a la izquierda";
+          maneuver = "sharp left";
+        } else {
+          instruction = "Continúa recto";
+          maneuver = "straight";
+        }
+      }
+
+      if (dist > 5) { // Ignorar segmentos muy cortos
+        steps.push({
+          instruction,
+          distance: dist,
+          duration: segDuration,
+          maneuver,
+          name: viaName || undefined,
+        });
+      }
+    }
+
+    return steps;
+  }, []);
+
+  // Limpiar ruta y marcador existentes
+  const clearRoute = useCallback(() => {
+    if (routeLayerRef.current) {
+      routeLayerRef.current.remove();
+      routeLayerRef.current = null;
+    }
+    if (destinationMarkerRef.current) {
+      destinationMarkerRef.current.remove();
+      destinationMarkerRef.current = null;
+    }
+  }, []);
 
   // Click handler para seleccionar destino
   useMapEvents({
     click: async (e) => {
       if (!enabled || !userLocation) return;
 
-      const origin = `${userLocation.lng},${userLocation.lat}`;
-      const dest = `${e.latlng.lng},${e.latlng.lat}`;
-      // Añadir steps=true para obtener instrucciones paso a paso
-      const url = `https://router.project-osrm.org/route/v1/driving/${origin};${dest}?overview=full&geometries=geojson&steps=true&annotations=distance,duration`;
+      // Limpiar ruta anterior ANTES de calcular nueva
+      clearRoute();
+
+      // BRouter API — gratuita, sin API key, rápida
+      const lonlats = `${userLocation.lng},${userLocation.lat}|${e.latlng.lng},${e.latlng.lat}`;
+      const url = `https://brouter.de/brouter?lonlats=${lonlats}&profile=car-fast&alternativeidx=0&format=geojson`;
+
+      onLoadingChange?.(true);
 
       try {
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data.code !== "Ok") return;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-        const route = data.routes[0];
-        const coords: [number, number][] = route.geometry.coordinates.map(
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        const data = await res.json();
+
+        const feature = data?.features?.[0];
+        if (!feature) {
+          onLoadingChange?.(false);
+          onError?.("No se encontró una ruta válida hacia ese punto.");
+          return;
+        }
+
+        const coords: [number, number][] = feature.geometry.coordinates.map(
           ([lng, lat]: [number, number]) => [lat, lng]
         );
-        const distance = route.distance; // metros
-        const duration = route.duration; // segundos
+        const distance = parseFloat(feature.properties["track-length"]) || 0;
+        const duration = parseFloat(feature.properties["total-time"]) || 0;
 
-        // Extraer instrucciones paso a paso
-        const steps: DirectionStep[] = [];
-        if (route.legs && route.legs.length > 0) {
-          route.legs.forEach((leg: any) => {
-            if (leg.steps && leg.steps.length > 0) {
-              leg.steps.forEach((step: any) => {
-                const instruction = translateInstruction(
-                  step.maneuver?.instruction || "",
-                  step.maneuver?.type || ""
-                );
-
-                // Solo agregar si la instrucción es significativa
-                if (instruction.length > 0) {
-                  steps.push({
-                    instruction,
-                    distance: step.distance,
-                    duration: step.duration,
-                  });
-                }
-              });
-            }
-          });
-        }
-
-        // Limpiar ruta anterior
-        if (routeLayerRef.current) {
-          routeLayerRef.current.remove();
-        }
-
-        // Dibujar nueva ruta
+        // Dibujar ruta
         routeLayerRef.current = L.polyline(coords, {
           color: "#4a7c59",
           weight: 5,
           opacity: 0.85,
         }).addTo(map);
 
+        // Marcador de destino
+        const destIcon = L.divIcon({
+          className: "destination-marker",
+          html: `<div style="width:36px;height:36px;background:#4a7c59;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(74,124,89,0.4);">📍</div>`,
+          iconSize: [36, 36],
+          iconAnchor: [18, 36],
+          popupAnchor: [0, -36],
+        });
+
+        destinationMarkerRef.current = L.marker(e.latlng, { icon: destIcon })
+          .addTo(map)
+          .bindPopup(`<div style="font-family:system-ui;"><b style="color:#4a7c59;">📍 Destino</b></div>`)
+          .openPopup();
+
         map.fitBounds(routeLayerRef.current.getBounds(), { padding: [60, 60] });
+
+        // Generar pasos de navegación desde los mensajes de BRouter
+        const messages = feature.properties?.messages;
+        const steps = messages ? buildSteps(messages) : [];
+
         onRouteFound({ distance, duration, steps });
-      } catch (err) {
-        console.error("Error calculando ruta:", err);
+        onLoadingChange?.(false);
+
+      } catch (err: any) {
+        onLoadingChange?.(false);
+        if (err?.name === "AbortError") {
+          onError?.("El servidor de rutas no respondió. Intenta de nuevo en unos momentos.");
+        } else {
+          onError?.("Error al calcular la ruta. Verifica tu conexión a internet.");
+        }
       }
     },
   });
@@ -388,11 +572,15 @@ function MeasureController({ enabled, onDistanceUpdate, clearTrigger }: { enable
   const map = useMap();
   const pointsRef = useRef<L.LatLng[]>([]);
   const layerGroupRef = useRef<L.LayerGroup>(L.layerGroup());
+  const polylineRef = useRef<L.Polyline | null>(null);
+  const labelMarkersRef = useRef<L.Marker[]>([]);
 
   // Clear all measure drawings
   const clearMeasure = useCallback(() => {
     layerGroupRef.current.clearLayers();
     pointsRef.current = [];
+    polylineRef.current = null;
+    labelMarkersRef.current = [];
     onDistanceUpdate(0);
   }, [onDistanceUpdate]);
 
@@ -412,6 +600,8 @@ function MeasureController({ enabled, onDistanceUpdate, clearTrigger }: { enable
     if (!enabled) {
       group.clearLayers();
       pointsRef.current = [];
+      polylineRef.current = null;
+      labelMarkersRef.current = [];
       map.off("click");
       return;
     }
@@ -420,14 +610,24 @@ function MeasureController({ enabled, onDistanceUpdate, clearTrigger }: { enable
 
     const handleMapClick = (e: L.LeafletMouseEvent) => {
       const latlng = e.latlng;
+      const pointIndex = pointsRef.current.length;
       pointsRef.current.push(latlng);
 
-      // Rebuild all drawings
-      group.clearLayers();
+      // Add new point marker (no rebuild)
+      L.circleMarker(latlng, {
+        radius: 5,
+        fillColor: pointIndex === 0 ? "#d4a96a" : "#4a7c59",
+        color: "#fff",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 1,
+      }).addTo(group);
 
-      // Polyline
-      if (pointsRef.current.length > 1) {
-        L.polyline(pointsRef.current, {
+      // Update polyline (not rebuild)
+      if (polylineRef.current) {
+        polylineRef.current.setLatLngs(pointsRef.current);
+      } else if (pointsRef.current.length > 1) {
+        polylineRef.current = L.polyline(pointsRef.current, {
           color: "#4a7c59",
           weight: 3,
           opacity: 0.85,
@@ -435,76 +635,45 @@ function MeasureController({ enabled, onDistanceUpdate, clearTrigger }: { enable
         }).addTo(group);
       }
 
-      // Circle markers + segment labels
+      // Clear old labels and recalculate
+      labelMarkersRef.current.forEach(m => group.removeLayer(m));
+      labelMarkersRef.current = [];
+
+      // Recalculate distances and add labels
       let totalDistance = 0;
-      pointsRef.current.forEach((pt, i) => {
-        // Circle marker at each point
-        L.circleMarker(pt, {
-          radius: 5,
-          fillColor: i === 0 ? "#d4a96a" : "#4a7c59",
-          color: "#fff",
-          weight: 2,
-          opacity: 1,
-          fillOpacity: 1,
-        }).addTo(group);
-
-        // Segment distance label
+      for (let i = 0; i < pointsRef.current.length; i++) {
         if (i > 0) {
-          const segDist = pointsRef.current[i - 1].distanceTo(pt);
+          const segDist = pointsRef.current[i - 1].distanceTo(pointsRef.current[i]);
           totalDistance += segDist;
-          const midLat = (pointsRef.current[i - 1].lat + pt.lat) / 2;
-          const midLng = (pointsRef.current[i - 1].lng + pt.lng) / 2;
+          const midLat = (pointsRef.current[i - 1].lat + pointsRef.current[i].lat) / 2;
+          const midLng = (pointsRef.current[i - 1].lng + pointsRef.current[i].lng) / 2;
 
-          L.marker([midLat, midLng], {
+          const labelMarker = L.marker([midLat, midLng], {
             icon: L.divIcon({
               className: "measure-label",
-              html: `<span style="
-                background: rgba(235,228,218,0.93);
-                color: #2c1e0f;
-                padding: 3px 8px;
-                border-radius: 6px;
-                font-size: 11px;
-                font-weight: 700;
-                white-space: nowrap;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-                font-family: 'JetBrains Mono', monospace;
-                border: 1px solid rgba(74,124,89,0.2);
-              ">${formatDist(segDist)}</span>`,
+              html: `<span style="background: rgba(235,228,218,0.93); color: #2c1e0f; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.2); font-family: 'JetBrains Mono', monospace; border: 1px solid rgba(74,124,89,0.2);">${formatDist(segDist)}</span>`,
               iconSize: [0, 0],
               iconAnchor: [0, 0],
             }),
             interactive: false,
           }).addTo(group);
+          labelMarkersRef.current.push(labelMarker);
         }
-      });
+      }
 
-      // Total distance label at last point
+      // Total distance label
       if (pointsRef.current.length > 1) {
         const lastPt = pointsRef.current[pointsRef.current.length - 1];
-        L.marker([lastPt.lat, lastPt.lng], {
+        const totalLabel = L.marker([lastPt.lat, lastPt.lng], {
           icon: L.divIcon({
             className: "measure-total-label",
-            html: `<span style="
-              background: #fff;
-              color: #1a1a1a;
-              padding: 10px 20px;
-              border-radius: 12px;
-              font-size: 15px;
-              font-weight: 900;
-              white-space: nowrap;
-              box-shadow: 0 6px 16px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
-              font-family: 'JetBrains Mono', monospace;
-              display: inline-block;
-              margin-top: -28px;
-              margin-left: 12px;
-              border: 3px solid #4a7c59;
-              line-height: 1;
-            ">Total: ${formatDist(totalDistance)}</span>`,
+            html: `<span style="background: #fff; color: #1a1a1a; padding: 10px 20px; border-radius: 12px; font-size: 15px; font-weight: 900; white-space: nowrap; box-shadow: 0 6px 16px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3); font-family: 'JetBrains Mono', monospace; display: inline-block; margin-top: -28px; margin-left: 12px; border: 3px solid #4a7c59; line-height: 1;">Total: ${formatDist(totalDistance)}</span>`,
             iconSize: [0, 0],
             iconAnchor: [0, 0],
           }),
           interactive: false,
         }).addTo(group);
+        labelMarkersRef.current.push(totalLabel);
       }
 
       onDistanceUpdate(totalDistance);
@@ -522,7 +691,7 @@ function MeasureController({ enabled, onDistanceUpdate, clearTrigger }: { enable
   return null;
 }
 
-function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateMeTrigger, onZoomChange, onMouseMove, searchTarget, isMeasuring, onMeasureUpdate, clearMeasureTrigger, isRouting, onRouteFound, clearRouteTrigger }: MapViewProps) {
+function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateMeTrigger, onZoomChange, onMouseMove, searchTarget, isMeasuring, onMeasureUpdate, clearMeasureTrigger, isRouting, onRouteFound, onLoadingRouteChange, onRouteError, clearRouteTrigger }: MapViewProps) {
   const visibleLayers = layers.filter(l => l.visible);
   const [userLocation, setUserLocation] = useState<L.LatLng | null>(null);
 
@@ -591,7 +760,7 @@ function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateM
 
       {isMeasuring && <MeasureController enabled={isMeasuring} onDistanceUpdate={onMeasureUpdate || (() => { })} clearTrigger={clearMeasureTrigger} />}
 
-      {isRouting && userLocation && <RoutingController enabled={isRouting} userLocation={userLocation} onRouteFound={onRouteFound || (() => { })} clearTrigger={clearRouteTrigger} />}
+      {isRouting && userLocation && <RoutingController enabled={isRouting} userLocation={userLocation} onRouteFound={onRouteFound || (() => { })} onLoadingChange={onLoadingRouteChange} onError={onRouteError} clearTrigger={clearRouteTrigger} />}
 
       {visibleLayers.map(layer => {
         const data = GEOJSON_MAP[layer.id];
