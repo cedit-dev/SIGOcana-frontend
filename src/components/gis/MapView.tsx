@@ -56,6 +56,7 @@ interface MapViewProps {
   onRouteFound?: (info: { distance: number; duration: number; steps: DirectionStep[] }) => void;
   onLoadingRouteChange?: (loading: boolean) => void;
   onRouteError?: (msg: string) => void;
+  onClearRoute?: () => void;
   clearRouteTrigger?: number;
 }
 
@@ -331,6 +332,7 @@ function RoutingController({
   onRouteFound,
   onLoadingChange,
   onError,
+  onClearRoute,
   clearTrigger,
 }: {
   enabled: boolean;
@@ -338,11 +340,24 @@ function RoutingController({
   onRouteFound: (info: { distance: number; duration: number; steps: DirectionStep[] }) => void;
   onLoadingChange?: (loading: boolean) => void;
   onError?: (msg: string) => void;
+  onClearRoute?: () => void;
   clearTrigger?: number;
 }) {
   const map = useMap();
   const routeLayerRef = useRef<L.Polyline | null>(null);
   const destinationMarkerRef = useRef<L.Marker | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef(0);
+
+  // Refs para evitar stale closures en event handlers
+  const onClearRouteRef = useRef(onClearRoute);
+  onClearRouteRef.current = onClearRoute;
+  const onRouteFoundRef = useRef(onRouteFound);
+  onRouteFoundRef.current = onRouteFound;
+  const onLoadingChangeRef = useRef(onLoadingChange);
+  onLoadingChangeRef.current = onLoadingChange;
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
 
   // Precalentar conexión a BRouter cuando se activa el modo ruta
   useEffect(() => {
@@ -477,8 +492,15 @@ function RoutingController({
     return steps;
   }, []);
 
-  // Limpiar ruta y marcador existentes
+  // Limpiar ruta, marcador y abortar fetch pendiente
   const clearRoute = useCallback(() => {
+    // Abortar fetch en curso
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
+    // Invalidar cualquier request pendiente
+    requestIdRef.current++;
     if (routeLayerRef.current) {
       routeLayerRef.current.remove();
       routeLayerRef.current = null;
@@ -494,27 +516,34 @@ function RoutingController({
     click: async (e) => {
       if (!enabled || !userLocation) return;
 
-      // Limpiar ruta anterior ANTES de calcular nueva
+      // Limpiar ruta anterior y abortar fetch pendiente
       clearRoute();
+
+      const myId = requestIdRef.current;
+      const controller = new AbortController();
+      abortRef.current = controller;
 
       // BRouter API — gratuita, sin API key, rápida
       const lonlats = `${userLocation.lng},${userLocation.lat}|${e.latlng.lng},${e.latlng.lat}`;
       const url = `https://brouter.de/brouter?lonlats=${lonlats}&profile=car-fast&alternativeidx=0&format=geojson`;
 
-      onLoadingChange?.(true);
+      onLoadingChangeRef.current?.(true);
 
       try {
-        const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
 
         const res = await fetch(url, { signal: controller.signal });
         clearTimeout(timeoutId);
+
+        // Si hubo otro clic mientras esperábamos, descartar esta respuesta
+        if (myId !== requestIdRef.current) return;
+
         const data = await res.json();
 
         const feature = data?.features?.[0];
         if (!feature) {
-          onLoadingChange?.(false);
-          onError?.("No se encontró una ruta válida hacia ese punto.");
+          onLoadingChangeRef.current?.(false);
+          onErrorRef.current?.("No se encontró una ruta válida hacia ese punto.");
           return;
         }
 
@@ -531,7 +560,7 @@ function RoutingController({
           opacity: 0.85,
         }).addTo(map);
 
-        // Marcador de destino
+        // Marcador de destino con botón Borrar
         const destIcon = L.divIcon({
           className: "destination-marker",
           html: `<div style="width:36px;height:36px;background:#4a7c59;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(74,124,89,0.4);">📍</div>`,
@@ -540,9 +569,21 @@ function RoutingController({
           popupAnchor: [0, -36],
         });
 
+        const popupContent = document.createElement("div");
+        popupContent.style.fontFamily = "system-ui";
+        popupContent.innerHTML = `<b style="color:#4a7c59;font-size:12px;">📍 Destino</b>`;
+        const clearBtn = document.createElement("button");
+        clearBtn.textContent = "Borrar";
+        clearBtn.style.cssText = "display:block;margin-top:4px;padding:2px 8px;font-size:10px;background:#e74c3c;color:white;border:none;border-radius:4px;cursor:pointer;";
+        clearBtn.addEventListener("click", () => {
+          clearRoute();
+          onClearRouteRef.current?.();
+        });
+        popupContent.appendChild(clearBtn);
+
         destinationMarkerRef.current = L.marker(e.latlng, { icon: destIcon })
           .addTo(map)
-          .bindPopup(`<div style="font-family:system-ui;"><b style="color:#4a7c59;">📍 Destino</b></div>`)
+          .bindPopup(popupContent)
           .openPopup();
 
         map.fitBounds(routeLayerRef.current.getBounds(), { padding: [60, 60] });
@@ -551,15 +592,15 @@ function RoutingController({
         const messages = feature.properties?.messages;
         const steps = messages ? buildSteps(messages) : [];
 
-        onRouteFound({ distance, duration, steps });
-        onLoadingChange?.(false);
+        onRouteFoundRef.current({ distance, duration, steps });
+        onLoadingChangeRef.current?.(false);
 
       } catch (err: any) {
-        onLoadingChange?.(false);
+        onLoadingChangeRef.current?.(false);
         if (err?.name === "AbortError") {
-          onError?.("El servidor de rutas no respondió. Intenta de nuevo en unos momentos.");
+          onErrorRef.current?.("El servidor de rutas no respondió. Intenta de nuevo en unos momentos.");
         } else {
-          onError?.("Error al calcular la ruta. Verifica tu conexión a internet.");
+          onErrorRef.current?.("Error al calcular la ruta. Verifica tu conexión a internet.");
         }
       }
     },
@@ -691,7 +732,7 @@ function MeasureController({ enabled, onDistanceUpdate, clearTrigger }: { enable
   return null;
 }
 
-function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateMeTrigger, onZoomChange, onMouseMove, searchTarget, isMeasuring, onMeasureUpdate, clearMeasureTrigger, isRouting, onRouteFound, onLoadingRouteChange, onRouteError, clearRouteTrigger }: MapViewProps) {
+function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateMeTrigger, onZoomChange, onMouseMove, searchTarget, isMeasuring, onMeasureUpdate, clearMeasureTrigger, isRouting, onRouteFound, onLoadingRouteChange, onRouteError, onClearRoute, clearRouteTrigger }: MapViewProps) {
   const visibleLayers = layers.filter(l => l.visible);
   const [userLocation, setUserLocation] = useState<L.LatLng | null>(null);
 
@@ -758,9 +799,9 @@ function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateM
 
       <SearchController feature={searchTarget || null} />
 
-      {isMeasuring && <MeasureController enabled={isMeasuring} onDistanceUpdate={onMeasureUpdate || (() => { })} clearTrigger={clearMeasureTrigger} />}
+      <MeasureController enabled={isMeasuring || false} onDistanceUpdate={onMeasureUpdate || (() => { })} clearTrigger={clearMeasureTrigger} />
 
-      {isRouting && userLocation && <RoutingController enabled={isRouting} userLocation={userLocation} onRouteFound={onRouteFound || (() => { })} onLoadingChange={onLoadingRouteChange} onError={onRouteError} clearTrigger={clearRouteTrigger} />}
+      <RoutingController enabled={(isRouting && !!userLocation) || false} userLocation={userLocation} onRouteFound={onRouteFound || (() => { })} onLoadingChange={onLoadingRouteChange} onError={onRouteError} onClearRoute={onClearRoute} clearTrigger={clearRouteTrigger} />
 
       {visibleLayers.map(layer => {
         const data = GEOJSON_MAP[layer.id];

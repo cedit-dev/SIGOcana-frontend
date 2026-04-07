@@ -123,27 +123,35 @@ const Index = () => {
   }, [layers, toast]);
 
   const handleMeasure = useCallback(() => {
-    setIsMeasuring(prev => !prev);
     if (!isMeasuring) {
+      // Activar medición → desactivar ruta si está activa
+      if (isRouting) {
+        setClearRouteTrigger(prev => prev + 1);
+        setRouteInfo(null);
+        setIsRouting(false);
+      }
+      setIsMeasuring(true);
       setMeasureDistance(null);
       toast({
         title: "Modo Medición Activado",
         description: "Haga clic en el mapa para crear puntos de medición.",
       });
     } else {
+      setIsMeasuring(false);
       toast({
         title: "Modo Medición Desactivado",
         description: "Medición finalizada.",
       });
     }
-  }, [isMeasuring, toast]);
+  }, [isMeasuring, isRouting, toast]);
 
   const handleClearMeasure = useCallback(() => {
     setClearMeasureTrigger(prev => prev + 1);
     setMeasureDistance(null);
+    setIsMeasuring(false);
     toast({
       title: "Trazo Borrado",
-      description: "Se eliminó el trazo de medición.",
+      description: "Se eliminaron todos los trazos de medición.",
     });
   }, [toast]);
 
@@ -154,7 +162,12 @@ const Index = () => {
       setRouteInfo(null);
       setIsRouting(false);
     } else {
-      // Activar → primero obtener ubicación, luego activar modo routing
+      // Activar ruta → desactivar medición si está activa
+      if (isMeasuring) {
+        setClearMeasureTrigger(prev => prev + 1);
+        setMeasureDistance(null);
+        setIsMeasuring(false);
+      }
       setLocateTrigger(prev => prev + 1);
       setIsRouting(true);
       toast({
@@ -162,7 +175,7 @@ const Index = () => {
         description: "Haz clic en el mapa para elegir el destino.",
       });
     }
-  }, [isRouting, toast]);
+  }, [isRouting, isMeasuring, toast]);
 
   const handleClearRoute = useCallback(() => {
     setClearRouteTrigger(prev => prev + 1);
@@ -241,6 +254,7 @@ const Index = () => {
           onRouteError={(msg) => {
             toast({ title: "Error de Ruta", description: msg, variant: "destructive" });
           }}
+          onClearRoute={handleClearRoute}
           clearRouteTrigger={clearRouteTrigger}
         />
 
