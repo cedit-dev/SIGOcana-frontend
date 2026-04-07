@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Layers, BarChart3, Ruler, Printer, Download,
   Maximize, LocateFixed, Map as MapIcon, Navigation,
+  Pentagon, Circle, Flame,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BASE_MAPS, BaseMapKey } from "@/data/base-maps";
@@ -13,15 +14,23 @@ interface MapToolbarProps {
   onZoomToExtent?: () => void;
   onLocateMe?: () => void;
   onMeasure?: () => void;
+  onMeasureArea?: () => void;
   onToggleRouting?: () => void;
+  onToggleBuffer?: () => void;
+  onToggleHeatmap?: () => void;
   onPrint?: () => void;
   onExport?: () => void;
   layersOpen: boolean;
   dashboardOpen: boolean;
   isMeasuring?: boolean;
+  isMeasuringArea?: boolean;
   isRouting?: boolean;
+  isBuffering?: boolean;
+  isHeatmap?: boolean;
   baseMap: BaseMapKey;
   onBaseMapChange: (key: BaseMapKey) => void;
+  bufferRadius?: number;
+  onBufferRadiusChange?: (r: number) => void;
 }
 
 const TOOLBAR_STYLE = {
@@ -38,17 +47,26 @@ export default function MapToolbar({
   onZoomToExtent,
   onLocateMe,
   onMeasure,
+  onMeasureArea,
   onToggleRouting,
+  onToggleBuffer,
+  onToggleHeatmap,
   onPrint,
   onExport,
   layersOpen,
   dashboardOpen,
   isMeasuring,
+  isMeasuringArea,
   isRouting,
+  isBuffering,
+  isHeatmap,
   baseMap,
   onBaseMapChange,
+  bufferRadius,
+  onBufferRadiusChange,
 }: MapToolbarProps) {
   const [showBaseMapPicker, setShowBaseMapPicker] = useState(false);
+  const [showAnalysisTools, setShowAnalysisTools] = useState(false);
 
   return (
     <>
@@ -75,11 +93,21 @@ export default function MapToolbar({
           onClick={() => setShowBaseMapPicker(p => !p)}
           active={showBaseMapPicker}
         />
+
+        <div className="w-6 h-px my-0.5" style={{ background: "rgba(0,0,0,0.07)" }} />
+
         <IconBtn
           icon={<Ruler className="w-[17px] h-[17px]" />}
-          label="Medir"
+          label="Medir Distancia"
           onClick={onMeasure}
           active={isMeasuring}
+        />
+        <IconBtn
+          icon={<Pentagon className="w-[17px] h-[17px]" />}
+          label="Medir Área"
+          onClick={onMeasureArea}
+          active={isMeasuringArea}
+          activeColor="#c4945a"
         />
         <IconBtn
           icon={<LocateFixed className="w-[17px] h-[17px]" />}
@@ -93,6 +121,23 @@ export default function MapToolbar({
           active={isRouting}
         />
 
+        <div className="w-6 h-px my-0.5" style={{ background: "rgba(0,0,0,0.07)" }} />
+
+        <IconBtn
+          icon={<Circle className="w-[17px] h-[17px]" />}
+          label="Buffer / Proximidad"
+          onClick={() => setShowAnalysisTools(p => !p)}
+          active={isBuffering}
+          activeColor="#2d8a6e"
+        />
+        <IconBtn
+          icon={<Flame className="w-[17px] h-[17px]" />}
+          label="Mapa de Calor"
+          onClick={onToggleHeatmap}
+          active={isHeatmap}
+          activeColor="#f03b20"
+        />
+
         {/* Base Map Picker Popover */}
         <AnimatePresence>
           {showBaseMapPicker && (
@@ -101,7 +146,7 @@ export default function MapToolbar({
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: -8, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="absolute left-[calc(100%+8px)] top-[40px] z-[1002] w-[180px] rounded-xl overflow-hidden"
+              className="absolute left-[calc(100%+8px)] top-[4px] z-[1002] w-[180px] rounded-xl overflow-hidden"
               style={{
                 background: "rgba(245, 241, 235, 0.96)",
                 backdropFilter: "blur(20px) saturate(1.5)",
@@ -129,6 +174,62 @@ export default function MapToolbar({
                     {val.name}
                   </button>
                 ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Buffer Popover */}
+        <AnimatePresence>
+          {showAnalysisTools && (
+            <motion.div
+              initial={{ opacity: 0, x: -8, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: -8, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="absolute left-[calc(100%+8px)] bottom-[60px] z-[1002] w-[200px] rounded-xl overflow-hidden"
+              style={{
+                background: "rgba(245, 241, 235, 0.96)",
+                backdropFilter: "blur(20px) saturate(1.5)",
+                WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+                border: "1px solid rgba(210,200,185,0.6)",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.04)",
+              }}
+            >
+              <div className="px-3 py-2.5" style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#2d8a6e]">Buffer de Proximidad</span>
+              </div>
+              <div className="p-3 space-y-2">
+                <label className="text-[11px] font-semibold text-[#555]">Radio (metros)</label>
+                <div className="flex gap-1.5">
+                  {[100, 250, 500, 1000].map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => onBufferRadiusChange?.(r)}
+                      className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${
+                        bufferRadius === r
+                          ? "bg-[#2d8a6e] text-white"
+                          : "bg-[#2d8a6e]/8 text-[#2d8a6e] hover:bg-[#2d8a6e]/15"
+                      }`}
+                    >
+                      {r >= 1000 ? `${r / 1000}km` : `${r}m`}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => {
+                    onToggleBuffer?.();
+                    setShowAnalysisTools(false);
+                  }}
+                  className={`w-full py-2 text-[12px] font-bold rounded-lg transition-all ${
+                    isBuffering
+                      ? "bg-[#e74c3c] text-white"
+                      : "bg-[#2d8a6e] text-white"
+                  }`}
+                >
+                  {isBuffering ? "Desactivar Buffer" : "Activar Buffer"}
+                </button>
+                <p className="text-[10px] text-[#999]">Haz clic en el mapa para crear zonas de buffer</p>
               </div>
             </motion.div>
           )}
