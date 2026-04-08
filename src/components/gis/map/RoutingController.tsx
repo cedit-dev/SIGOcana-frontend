@@ -3,6 +3,46 @@ import { useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import type { DirectionStep } from "../MapView";
 
+// Icono de ORIGEN — pin verde con letra A
+function makeOriginIcon() {
+  return L.divIcon({
+    className: "",
+    html: `<div style="
+      position:relative;width:32px;height:40px;
+    ">
+      <svg viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:32px;height:40px;filter:drop-shadow(0 3px 6px rgba(74,124,89,0.45));">
+        <path d="M16 2C9.373 2 4 7.373 4 14c0 9 12 24 12 24S28 23 28 14C28 7.373 22.627 2 16 2z" fill="#4a7c59"/>
+        <path d="M16 3C9.925 3 5 7.925 5 14c0 8.5 11 22.5 11 22.5S27 22.5 27 14C27 7.925 22.075 3 16 3z" fill="#5d9a6e"/>
+        <circle cx="16" cy="14" r="7" fill="white" opacity="0.95"/>
+        <text x="16" y="18" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="700" font-size="9" fill="#4a7c59">A</text>
+      </svg>
+    </div>`,
+    iconSize: [32, 40],
+    iconAnchor: [16, 40],
+    popupAnchor: [0, -42],
+  });
+}
+
+// Icono de DESTINO — pin rojo con letra B
+function makeDestinationIcon() {
+  return L.divIcon({
+    className: "",
+    html: `<div style="
+      position:relative;width:32px;height:40px;
+    ">
+      <svg viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:32px;height:40px;filter:drop-shadow(0 3px 6px rgba(220,53,69,0.45));">
+        <path d="M16 2C9.373 2 4 7.373 4 14c0 9 12 24 12 24S28 23 28 14C28 7.373 22.627 2 16 2z" fill="#c0392b"/>
+        <path d="M16 3C9.925 3 5 7.925 5 14c0 8.5 11 22.5 11 22.5S27 22.5 27 14C27 7.925 22.075 3 16 3z" fill="#e74c3c"/>
+        <circle cx="16" cy="14" r="7" fill="white" opacity="0.95"/>
+        <text x="16" y="18" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="700" font-size="9" fill="#c0392b">B</text>
+      </svg>
+    </div>`,
+    iconSize: [32, 40],
+    iconAnchor: [16, 40],
+    popupAnchor: [0, -42],
+  });
+}
+
 interface RoutingControllerProps {
   enabled: boolean;
   userLocation: L.LatLng | null;
@@ -24,6 +64,7 @@ export default function RoutingController({
 }: RoutingControllerProps) {
   const map = useMap();
   const routeLayerRef = useRef<L.Polyline | null>(null);
+  const originMarkerRef = useRef<L.Marker | null>(null);
   const destinationMarkerRef = useRef<L.Marker | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef(0);
@@ -52,6 +93,10 @@ export default function RoutingController({
         routeLayerRef.current.remove();
         routeLayerRef.current = null;
       }
+      if (originMarkerRef.current) {
+        originMarkerRef.current.remove();
+        originMarkerRef.current = null;
+      }
       if (destinationMarkerRef.current) {
         destinationMarkerRef.current.remove();
         destinationMarkerRef.current = null;
@@ -63,6 +108,10 @@ export default function RoutingController({
     if (routeLayerRef.current) {
       routeLayerRef.current.remove();
       routeLayerRef.current = null;
+    }
+    if (originMarkerRef.current) {
+      originMarkerRef.current.remove();
+      originMarkerRef.current = null;
     }
     if (destinationMarkerRef.current) {
       destinationMarkerRef.current.remove();
@@ -168,6 +217,10 @@ export default function RoutingController({
       routeLayerRef.current.remove();
       routeLayerRef.current = null;
     }
+    if (originMarkerRef.current) {
+      originMarkerRef.current.remove();
+      originMarkerRef.current = null;
+    }
     if (destinationMarkerRef.current) {
       destinationMarkerRef.current.remove();
       destinationMarkerRef.current = null;
@@ -215,35 +268,37 @@ export default function RoutingController({
         routeLayerRef.current = L.polyline(coords, {
           color: "#4a7c59",
           weight: 5,
-          opacity: 0.85,
+          opacity: 0.9,
         }).addTo(map);
 
-        const destIcon = L.divIcon({
-          className: "destination-marker",
-          html: `<div style="width:36px;height:36px;background:#4a7c59;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(74,124,89,0.4);">📍</div>`,
-          iconSize: [36, 36],
-          iconAnchor: [18, 36],
-          popupAnchor: [0, -36],
-        });
+        // Marcador de ORIGEN (A) — posición del usuario
+        originMarkerRef.current = L.marker(userLocation, { icon: makeOriginIcon(), zIndexOffset: 900 })
+          .addTo(map)
+          .bindPopup(`<div style="font-family:system-ui;font-size:12px;"><b style="color:#4a7c59;">Origen</b><br/><span style="color:#888;font-size:10px;">Tu ubicación</span></div>`);
 
+        // Marcador de DESTINO (B) con botón borrar
         const popupContent = document.createElement("div");
-        popupContent.style.fontFamily = "system-ui";
-        popupContent.innerHTML = `<b style="color:#4a7c59;font-size:12px;">📍 Destino</b>`;
+        popupContent.style.cssText = "font-family:system-ui;font-size:12px;min-width:110px;";
+        popupContent.innerHTML = `<b style="color:#c0392b;">Destino</b><br/><span style="color:#888;font-size:10px;">Punto de llegada</span>`;
         const clearBtn = document.createElement("button");
-        clearBtn.textContent = "Borrar";
-        clearBtn.style.cssText = "display:block;margin-top:4px;padding:2px 8px;font-size:10px;background:#e74c3c;color:white;border:none;border-radius:4px;cursor:pointer;";
+        clearBtn.textContent = "Borrar ruta";
+        clearBtn.style.cssText = "display:block;margin-top:6px;padding:3px 10px;font-size:10px;background:#e74c3c;color:white;border:none;border-radius:4px;cursor:pointer;width:100%;";
         clearBtn.addEventListener("click", () => {
           clearRoute();
           onClearRouteRef.current?.();
         });
         popupContent.appendChild(clearBtn);
 
-        destinationMarkerRef.current = L.marker(e.latlng, { icon: destIcon })
+        destinationMarkerRef.current = L.marker(e.latlng, { icon: makeDestinationIcon(), zIndexOffset: 1000 })
           .addTo(map)
           .bindPopup(popupContent)
           .openPopup();
 
-        map.fitBounds(routeLayerRef.current.getBounds(), { padding: [60, 60] });
+        const bounds = routeLayerRef.current.getBounds();
+        const currentZoom = map.getZoom();
+        const boundsZoom = map.getBoundsZoom(bounds, false, [60, 60] as any);
+        const targetZoom = Math.max(currentZoom, Math.min(boundsZoom, 16));
+        map.flyToBounds(bounds, { padding: [60, 60], maxZoom: targetZoom, duration: 1.2 });
 
         const messages = feature.properties?.messages;
         const steps = messages ? buildSteps(messages) : [];
