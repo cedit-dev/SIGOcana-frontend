@@ -2,22 +2,23 @@ import { useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet.heat";
-import { educacionGeoJSON, saludGeoJSON, gobiernoGeoJSON, proyectosGeoJSON } from "@/data/ocana-geodata";
 
 interface HeatmapControllerProps {
   enabled: boolean;
+  dataMap: Record<string, GeoJSON.FeatureCollection>;
+  pointLayerIds?: Set<string>;
 }
 
-const POINT_SOURCES = [educacionGeoJSON, saludGeoJSON, gobiernoGeoJSON, proyectosGeoJSON];
-
-export default function HeatmapController({ enabled }: HeatmapControllerProps) {
+export default function HeatmapController({ enabled, dataMap, pointLayerIds }: HeatmapControllerProps) {
   const map = useMap();
   const heatLayerRef = useRef<any>(null);
 
   useEffect(() => {
     if (enabled) {
       const points: [number, number, number][] = [];
-      POINT_SOURCES.forEach((source) => {
+      Array.from(pointLayerIds || []).forEach((layerId) => {
+        const source = dataMap[layerId];
+        if (!source) return;
         source.features.forEach((f) => {
           const coords = (f.geometry as GeoJSON.Point).coordinates;
           points.push([coords[1], coords[0], 0.6]);
@@ -52,7 +53,7 @@ export default function HeatmapController({ enabled }: HeatmapControllerProps) {
         heatLayerRef.current = null;
       }
     };
-  }, [enabled, map]);
+  }, [dataMap, enabled, map, pointLayerIds]);
 
   return null;
 }

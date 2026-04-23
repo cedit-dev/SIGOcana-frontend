@@ -7,12 +7,10 @@ import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { OCANA_CENTER, OCANA_ZOOM, LayerConfig } from "@/data/ocana-geodata";
 import { BaseMapKey } from "@/data/base-maps";
 
-// Fix leaflet default icon
 import iconUrl from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
 import iconRetina from "leaflet/dist/images/marker-icon-2x.png";
 
-// Sub-components
 import BaseMapLayer from "./map/BaseMapLayer";
 import PointLayer from "./map/PointLayer";
 import MapController from "./map/MapController";
@@ -23,7 +21,8 @@ import MeasureController from "./map/MeasureController";
 import AreaMeasureController from "./map/AreaMeasureController";
 import BufferController from "./map/BufferController";
 import HeatmapController from "./map/HeatmapController";
-import { GEOJSON_MAP, POINT_LAYERS, PROP_LABELS, ESTRATO_COLORS, USO_COLORS } from "./map/constants";
+import AdminPointPickerController from "./map/AdminPointPickerController";
+import { POINT_LAYERS, PROP_LABELS, ESTRATO_COLORS, USO_COLORS } from "./map/constants";
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 
@@ -49,6 +48,8 @@ export interface DirectionStep {
 
 interface MapViewProps {
   layers: LayerConfig[];
+  dataMap: Record<string, GeoJSON.FeatureCollection>;
+  pointLayerIds?: Set<string>;
   baseMap: BaseMapKey;
   onFeatureClick: (feature: GeoJSON.Feature) => void;
   zoomToExtentTrigger?: number;
@@ -73,10 +74,42 @@ interface MapViewProps {
   onBufferCreated?: (count: number) => void;
   clearBufferTrigger?: number;
   isHeatmap?: boolean;
+  isPickingAdminPoint?: boolean;
+  onAdminPointPick?: (coords: { lat: number; lng: number }) => void;
 }
 
-function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateMeTrigger, onZoomChange, onMouseMove, searchTarget, isMeasuring, onMeasureUpdate, clearMeasureTrigger, isRouting, onRouteFound, onLoadingRouteChange, onRouteError, onClearRoute, clearRouteTrigger, isMeasuringArea, onAreaUpdate, clearAreaTrigger, isBuffering, bufferRadius, onBufferCreated, clearBufferTrigger, isHeatmap }: MapViewProps) {
-  const visibleLayers = layers.filter(l => l.visible);
+function MapView({
+  layers,
+  dataMap,
+  pointLayerIds,
+  baseMap,
+  onFeatureClick,
+  zoomToExtentTrigger,
+  locateMeTrigger,
+  onZoomChange,
+  onMouseMove,
+  searchTarget,
+  isMeasuring,
+  onMeasureUpdate,
+  clearMeasureTrigger,
+  isRouting,
+  onRouteFound,
+  onLoadingRouteChange,
+  onRouteError,
+  onClearRoute,
+  clearRouteTrigger,
+  isMeasuringArea,
+  onAreaUpdate,
+  clearAreaTrigger,
+  isBuffering,
+  bufferRadius,
+  onBufferCreated,
+  clearBufferTrigger,
+  isHeatmap,
+  isPickingAdminPoint,
+  onAdminPointPick,
+}: MapViewProps) {
+  const visibleLayers = layers.filter((l) => l.visible);
   const [userLocation, setUserLocation] = useState<L.LatLng | null>(null);
 
   const getStyle = (layerId: string, color: string, opacity: number) => {
@@ -103,60 +136,62 @@ function MapView({ layers, baseMap, onFeatureClick, zoomToExtentTrigger, locateM
     };
   };
 
-  const createOnEachFeature = useCallback((layerId: string, color: string, opacity: number) => {
-    return (feature: GeoJSON.Feature, layer: L.Layer) => {
-      if (feature.properties) {
-        const props = feature.properties;
-        let html = `<div class="custom-popup"><h3>${props.nombre || "Sin nombre"}</h3>`;
-        Object.entries(props).filter(([k]) => k !== "nombre").forEach(([k, v]) => {
-          const label = PROP_LABELS[k] ?? k.replace(/_/g, " ");
-          const val = v === null || v === undefined ? "—" : String(v);
-          html += `<div class="attr-row"><span class="attr-label">${label}</span><span class="attr-value">${val}</span></div>`;
-        });
-        html += "</div>";
-        (layer as L.Path).bindPopup(html);
-        (layer as L.Path).on("click", () => onFeatureClick?.(feature));
-      }
-    };
-  }, [onFeatureClick]);
+  const createOnEachFeature = useCallback(
+    (_layerId: string, _color: string, _opacity: number) => {
+      return (feature: GeoJSON.Feature, layer: L.Layer) => {
+        if (feature.properties) {
+          const props = feature.properties;
+          let html = `<div class="custom-popup"><h3>${props.nombre || "Sin nombre"}</h3>`;
+          Object.entries(props)
+            .filter(([k]) => k !== "nombre")
+            .forEach(([k, v]) => {
+              const label = PROP_LABELS[k] ?? k.replace(/_/g, " ");
+              const val = v === null || v === undefined ? "—" : String(v);
+              html += `<div class="attr-row"><span class="attr-label">${label}</span><span class="attr-value">${val}</span></div>`;
+            });
+          html += "</div>";
+          (layer as L.Path).bindPopup(html);
+          (layer as L.Path).on("click", () => onFeatureClick?.(feature));
+        }
+      };
+    },
+    [onFeatureClick],
+  );
 
   return (
-    <MapContainer
-      center={OCANA_CENTER}
-      zoom={OCANA_ZOOM}
-      maxZoom={20}
-      zoomControl={false}
-      className="w-full h-full"
-      style={{ background: "#f0ede8" }}
-    >
+    <MapContainer center={OCANA_CENTER} zoom={OCANA_ZOOM} maxZoom={20} zoomControl={false} className="w-full h-full" style={{ background: "#f0ede8" }}>
       <ZoomControl position="bottomleft" />
       <BaseMapLayer baseMap={baseMap} />
 
-      <MapController
-        zoomToExtentTrigger={zoomToExtentTrigger}
-        locateMeTrigger={locateMeTrigger}
-        onLocationFound={setUserLocation}
-      />
-
+      <MapController zoomToExtentTrigger={zoomToExtentTrigger} locateMeTrigger={locateMeTrigger} onLocationFound={setUserLocation} />
       <MapEventsTracker onZoomChange={onZoomChange} onMouseMove={onMouseMove} />
-
       <SearchController feature={searchTarget || null} />
+      <MeasureController enabled={isMeasuring || false} onDistanceUpdate={onMeasureUpdate || (() => {})} clearTrigger={clearMeasureTrigger} />
+      <RoutingController
+        enabled={(isRouting && !!userLocation) || false}
+        userLocation={userLocation}
+        onRouteFound={onRouteFound || (() => {})}
+        onLoadingChange={onLoadingRouteChange}
+        onError={onRouteError}
+        onClearRoute={onClearRoute}
+        clearTrigger={clearRouteTrigger}
+      />
+      <AreaMeasureController enabled={isMeasuringArea || false} onAreaUpdate={onAreaUpdate || (() => {})} clearTrigger={clearAreaTrigger} />
+      <BufferController
+        enabled={isBuffering || false}
+        radiusMeters={bufferRadius || 500}
+        onBufferCreated={onBufferCreated}
+        clearTrigger={clearBufferTrigger}
+        dataMap={dataMap}
+      />
+      <HeatmapController enabled={isHeatmap || false} dataMap={dataMap} pointLayerIds={pointLayerIds} />
+      <AdminPointPickerController enabled={isPickingAdminPoint || false} onPick={onAdminPointPick || (() => {})} />
 
-      <MeasureController enabled={isMeasuring || false} onDistanceUpdate={onMeasureUpdate || (() => { })} clearTrigger={clearMeasureTrigger} />
-
-      <RoutingController enabled={(isRouting && !!userLocation) || false} userLocation={userLocation} onRouteFound={onRouteFound || (() => { })} onLoadingChange={onLoadingRouteChange} onError={onRouteError} onClearRoute={onClearRoute} clearTrigger={clearRouteTrigger} />
-
-      <AreaMeasureController enabled={isMeasuringArea || false} onAreaUpdate={onAreaUpdate || (() => { })} clearTrigger={clearAreaTrigger} />
-
-      <BufferController enabled={isBuffering || false} radiusMeters={bufferRadius || 500} onBufferCreated={onBufferCreated} clearTrigger={clearBufferTrigger} />
-
-      <HeatmapController enabled={isHeatmap || false} />
-
-      {visibleLayers.map(layer => {
-        const data = GEOJSON_MAP[layer.id];
+      {visibleLayers.map((layer) => {
+        const data = dataMap[layer.id];
         if (!data) return null;
 
-        if (POINT_LAYERS.has(layer.id)) {
+        if (layer.geometryType === "Point" || pointLayerIds?.has(layer.id) || POINT_LAYERS.has(layer.id)) {
           return (
             <PointLayer
               key={layer.id}

@@ -6,16 +6,15 @@ import booleanIntersects from "@turf/boolean-intersects";
 import { point } from "@turf/helpers";
 import type { Position } from "geojson";
 
-import { GEOJSON_MAP } from "./constants";
-
 interface BufferControllerProps {
   enabled: boolean;
   radiusMeters: number;
   onBufferCreated?: (featureCount: number) => void;
   clearTrigger?: number;
+  dataMap: Record<string, GeoJSON.FeatureCollection>;
 }
 
-export default function BufferController({ enabled, radiusMeters, onBufferCreated, clearTrigger }: BufferControllerProps) {
+export default function BufferController({ enabled, radiusMeters, onBufferCreated, clearTrigger, dataMap }: BufferControllerProps) {
   const map = useMap();
   const groupRef = useRef<L.LayerGroup | null>(null);
 
@@ -79,7 +78,7 @@ export default function BufferController({ enabled, radiusMeters, onBufferCreate
       // Buscar features de todas las capas que intersectan con el buffer
       const hits: Array<{ layerName: string; nombre: string }> = [];
 
-      for (const [layerId, collection] of Object.entries(GEOJSON_MAP)) {
+      for (const [layerId, collection] of Object.entries(dataMap)) {
         for (const feature of collection.features) {
           try {
             if (booleanIntersects(buffered, feature)) {
@@ -155,7 +154,7 @@ export default function BufferController({ enabled, radiusMeters, onBufferCreate
     } catch (err) {
       console.error("Error creando buffer:", err);
     }
-  }, [map, radiusMeters, onBufferCreated]);
+  }, [dataMap, map, radiusMeters, onBufferCreated]);
 
   useEffect(() => {
     if (!enabled) {

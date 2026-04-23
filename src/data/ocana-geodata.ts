@@ -13,6 +13,8 @@ export interface LayerConfig {
   visible: boolean;
   opacity: number;
   description: string;
+  geometryType?: GeoJSON.Geometry["type"];
+  source?: "core" | "custom";
 }
 
 export const LAYER_CATEGORIES = [

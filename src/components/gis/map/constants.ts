@@ -17,6 +17,8 @@ export const GEOJSON_MAP: Record<string, GeoJSON.FeatureCollection> = {
   vias: viasGeoJSON,
 };
 
+export const STATIC_GEOJSON_MAP = GEOJSON_MAP;
+
 export const POINT_LAYERS = new Set(["educacion", "salud", "gobierno", "proyectos"]);
 
 export const PROP_LABELS: Record<string, string> = {

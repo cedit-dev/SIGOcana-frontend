@@ -1,4 +1,4 @@
-import { MapPin, Search, User, Home, Filter } from "lucide-react";
+import { MapPin, Search, User, Home, Filter, Shield, LogOut } from "lucide-react";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,9 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import GradientText from "@/components/GradientText";
 import { comunasGeoJSON, barriosGeoJSON, educacionGeoJSON, saludGeoJSON, gobiernoGeoJSON, proyectosGeoJSON } from "@/data/ocana-geodata";
+import { AuthSession } from "@/lib/auth";
 
 interface GISHeaderProps {
   onFeatureSelect?: (feature: GeoJSON.Feature) => void;
+  currentUser?: AuthSession | null;
+  onLogout?: () => void;
+  onToggleAdminPanel?: () => void;
+  adminPanelOpen?: boolean;
 }
 
 type CategoryKey = "todos" | "comunas" | "barrios" | "educacion" | "salud" | "gobierno" | "proyectos";
@@ -21,13 +26,13 @@ interface SearchEntry {
   feature: GeoJSON.Feature;
 }
 
-const CATEGORY_CONFIG: Record<Exclude<CategoryKey, "todos">, { label: string; icon: string; data: GeoJSON.FeatureCollection }> = {
-  comunas: { label: "Comunas", icon: "🏘️", data: comunasGeoJSON },
-  barrios: { label: "Barrios", icon: "🏠", data: barriosGeoJSON },
-  educacion: { label: "Educación", icon: "🎓", data: educacionGeoJSON },
-  salud: { label: "Salud", icon: "🏥", data: saludGeoJSON },
-  gobierno: { label: "Gobierno", icon: "🏛️", data: gobiernoGeoJSON },
-  proyectos: { label: "Proyectos", icon: "📋", data: proyectosGeoJSON },
+const CATEGORY_CONFIG: Record<Exclude<CategoryKey, "todos">, { label: string; data: GeoJSON.FeatureCollection }> = {
+  comunas: { label: "Comunas", data: comunasGeoJSON },
+  barrios: { label: "Barrios", data: barriosGeoJSON },
+  educacion: { label: "Educacion", data: educacionGeoJSON },
+  salud: { label: "Salud", data: saludGeoJSON },
+  gobierno: { label: "Gobierno", data: gobiernoGeoJSON },
+  proyectos: { label: "Proyectos", data: proyectosGeoJSON },
 };
 
 const SEARCHABLE_FIELDS = ["nombre", "tipo", "sector", "categoria", "especialidad", "estrato", "estado", "uso", "superficie"];
@@ -35,29 +40,37 @@ const SEARCHABLE_FIELDS = ["nombre", "tipo", "sector", "categoria", "especialida
 const buildSearchIndex = (): SearchEntry[] => {
   const index: SearchEntry[] = [];
 
-  (Object.entries(CATEGORY_CONFIG) as [Exclude<CategoryKey, "todos">, typeof CATEGORY_CONFIG[keyof typeof CATEGORY_CONFIG]][]).forEach(([catKey, config]) => {
-    config.data.features.forEach((feature) => {
-      const props = feature.properties || {};
-      const searchTexts: string[] = [];
-      SEARCHABLE_FIELDS.forEach((field) => {
-        const val = props[field];
-        if (val !== null && val !== undefined && val !== "") {
-          searchTexts.push(String(val).toLowerCase());
+  (Object.entries(CATEGORY_CONFIG) as [Exclude<CategoryKey, "todos">, { label: string; data: GeoJSON.FeatureCollection }][]).forEach(
+    ([catKey, config]) => {
+      config.data.features.forEach((feature) => {
+        const props = feature.properties || {};
+        const searchTexts: string[] = [];
+        SEARCHABLE_FIELDS.forEach((field) => {
+          const val = props[field];
+          if (val !== null && val !== undefined && val !== "") {
+            searchTexts.push(String(val).toLowerCase());
+          }
+        });
+        const text = searchTexts.join(" ");
+        if (text) {
+          index.push({ text, category: catKey, categoryLabel: config.label, feature });
         }
       });
-      const text = searchTexts.join(" ");
-      if (text) {
-        index.push({ text, category: catKey, categoryLabel: config.label, feature });
-      }
-    });
-  });
+    },
+  );
 
   return index;
 };
 
 const SEARCH_INDEX = buildSearchIndex();
 
-export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
+export default function GISHeader({
+  onFeatureSelect,
+  currentUser,
+  onLogout,
+  onToggleAdminPanel,
+  adminPanelOpen,
+}: GISHeaderProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchEntry[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -87,9 +100,7 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
     try {
       setIsSearching(true);
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          q + ", Ocaña, Colombia"
-        )}&limit=3&timeout=5`
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(`${q}, Ocana, Colombia`)}&limit=3&timeout=5`,
       );
       const data = await response.json();
 
@@ -106,7 +117,7 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
             },
             properties: {
               nombre: item.name,
-              tipo: "Ubicación (búsqueda)",
+              tipo: "Ubicacion",
               display_name: item.display_name,
             },
           },
@@ -114,15 +125,12 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
 
         setResults((prev) => {
           const combined = [...prev, ...nominatimResults];
-          const unique = Array.from(
-            new Map(combined.map((item) => [item.feature.properties?.nombre, item])).values()
-          ).slice(0, 12);
-          return unique;
+          return Array.from(new Map(combined.map((item) => [item.feature.properties?.nombre, item])).values()).slice(0, 12);
         });
       }
       setIsSearching(false);
     } catch (err) {
-      console.error("Error en búsqueda Nominatim:", err);
+      console.error("Error en busqueda Nominatim:", err);
       setIsSearching(false);
     }
   }, []);
@@ -149,16 +157,19 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
         searchNominatim(value);
       }, 400);
     },
-    [searchLocal, searchNominatim, activeFilter]
+    [activeFilter, searchLocal, searchNominatim],
   );
 
-  const handleFilterChange = useCallback((filter: CategoryKey) => {
-    setActiveFilter(filter);
-    if (query.trim()) {
-      searchLocal(query, filter);
-      setShowDropdown(true);
-    }
-  }, [query, searchLocal]);
+  const handleFilterChange = useCallback(
+    (filter: CategoryKey) => {
+      setActiveFilter(filter);
+      if (query.trim()) {
+        searchLocal(query, filter);
+        setShowDropdown(true);
+      }
+    },
+    [query, searchLocal],
+  );
 
   useEffect(() => {
     return () => {
@@ -168,7 +179,6 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
     };
   }, []);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -186,7 +196,6 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
     setShowDropdown(false);
   };
 
-  // Group results by category
   const groupedResults = results.reduce<Record<string, SearchEntry[]>>((acc, entry) => {
     const key = entry.categoryLabel;
     if (!acc[key]) acc[key] = [];
@@ -198,7 +207,7 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
     { key: "todos", label: "Todos" },
     { key: "comunas", label: "Comunas" },
     { key: "barrios", label: "Barrios" },
-    { key: "educacion", label: "Educación" },
+    { key: "educacion", label: "Educacion" },
     { key: "salud", label: "Salud" },
     { key: "gobierno", label: "Gobierno" },
     { key: "proyectos", label: "Proyectos" },
@@ -219,18 +228,14 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
       }}
     >
       <div className="h-[56px] flex items-center px-5 gap-5">
-        {/* Logo */}
         <button
           onClick={() => navigate("/")}
           className="flex items-center gap-2.5 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-          title="Ir a la página principal"
+          title="Ir a la pagina principal"
         >
           <div className="text-left">
-            <GradientText
-              className="text-[14px] font-extrabold leading-none tracking-tight"
-              colors={["#4a7c59", "#2d8a6e", "#5d9a6e"]}
-            >
-              SIGOcaña
+            <GradientText className="text-[14px] font-extrabold leading-none tracking-tight" colors={["#4a7c59", "#2d8a6e", "#5d9a6e"]}>
+              SIGOcana
             </GradientText>
             <div className="flex items-center gap-1.5 mt-0.5">
               <div className="w-1.5 h-1.5 rounded-full bg-[#4a7c59]" style={{ animation: "marker-pulse 2s infinite" }} />
@@ -241,7 +246,6 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
           </div>
         </button>
 
-        {/* Search */}
         <div className="flex-1 max-w-md" ref={dropdownRef}>
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#bbb] group-focus-within:text-[#4a7c59] transition-colors duration-200" />
@@ -261,14 +265,13 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
               }}
             />
             <button
-              onClick={() => setShowFilters(p => !p)}
+              onClick={() => setShowFilters((p) => !p)}
               className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md transition-colors ${showFilters ? "text-[#4a7c59] bg-[#4a7c59]/10" : "text-[#bbb] hover:text-[#4a7c59]"}`}
               title="Filtros"
             >
               <Filter className="w-3.5 h-3.5" />
             </button>
 
-            {/* Search Results Dropdown */}
             <AnimatePresence>
               {showDropdown && results.length > 0 && (
                 <motion.div
@@ -281,9 +284,7 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
                   {Object.entries(groupedResults).map(([categoryLabel, entries]) => (
                     <div key={categoryLabel}>
                       <div className="px-3 py-1.5 bg-[#f8f7f5] border-b border-[#eee]">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#4a7c59]">
-                          {categoryLabel}
-                        </span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#4a7c59]">{categoryLabel}</span>
                         <span className="text-[10px] text-[#999] ml-1.5">({entries.length})</span>
                       </div>
                       {entries.map((entry, idx) => (
@@ -298,29 +299,23 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
                               {entry.feature.properties?.nombre || "Sin nombre"}
                             </div>
                             <div className="text-[10px] text-[#888] truncate">
-                              {entry.feature.properties?.tipo || entry.feature.properties?.categoria || entry.feature.properties?.uso || "Ubicación"}
-                              {entry.feature.properties?.estrato && ` · Estrato ${entry.feature.properties.estrato}`}
+                              {entry.feature.properties?.tipo || entry.feature.properties?.categoria || entry.feature.properties?.uso || "Ubicacion"}
                             </div>
                           </div>
                         </button>
                       ))}
                     </div>
                   ))}
-                  {isSearching && (
-                    <div className="px-4 py-2 text-[11px] text-[#999] text-center">Buscando en línea...</div>
-                  )}
+                  {isSearching && <div className="px-4 py-2 text-[11px] text-[#999] text-center">Buscando en linea...</div>}
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
         </div>
 
-        {/* Right side */}
         <div className="ml-auto flex items-center gap-1">
           <div className="hidden lg:flex flex-col items-end mr-3">
-            <span className="text-[11px] font-bold text-[#1a1a1a] leading-none">
-              Alcaldía de Ocaña
-            </span>
+            <span className="text-[11px] font-bold text-[#1a1a1a] leading-none">Alcaldia de Ocana</span>
             <span className="text-[9px] font-bold uppercase tracking-widest mt-0.5" style={{ color: "#4a7c59" }}>
               Norte de Santander · Col.
             </span>
@@ -331,26 +326,43 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
           <div className="flex items-center gap-0.5">
             <HeaderBtn icon={<Home className="w-[15px] h-[15px]" />} label="Inicio" onClick={() => navigate("/")} />
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => navigate("/login")}
-                  className="w-8 h-8 rounded-xl hover:bg-black/[0.04] ml-1"
-                >
-                  <div className="w-7 h-7 rounded-lg bg-[#4a7c59]/8 border border-[#4a7c59]/12 flex items-center justify-center">
-                    <User className="w-3.5 h-3.5 text-[#4a7c59]" />
-                  </div>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Perfil</TooltipContent>
-            </Tooltip>
+            {currentUser ? (
+              <>
+                <div className="hidden md:flex flex-col items-end mr-1">
+                  <span className="text-[11px] font-bold text-[#1a1a1a] leading-none">{currentUser.name}</span>
+                  <span className="text-[9px] font-bold uppercase tracking-widest mt-0.5 text-[#4a7c59]">
+                    {currentUser.role.replace("_", " ")}
+                  </span>
+                </div>
+                <HeaderBtn
+                  icon={<Shield className="w-[15px] h-[15px]" />}
+                  label="Administracion"
+                  onClick={onToggleAdminPanel}
+                  active={adminPanelOpen}
+                />
+                <HeaderBtn icon={<LogOut className="w-[15px] h-[15px]" />} label="Salir" onClick={onLogout} />
+              </>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate("/login")}
+                    className="w-8 h-8 rounded-xl hover:bg-black/[0.04] ml-1"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-[#4a7c59]/8 border border-[#4a7c59]/12 flex items-center justify-center">
+                      <User className="w-3.5 h-3.5 text-[#4a7c59]" />
+                    </div>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Perfil</TooltipContent>
+              </Tooltip>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Filter Chips */}
       <AnimatePresence>
         {showFilters && (
           <motion.div
@@ -366,9 +378,7 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
                   key={chip.key}
                   onClick={() => handleFilterChange(chip.key)}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
-                    activeFilter === chip.key
-                      ? "bg-[#4a7c59] text-white shadow-sm"
-                      : "bg-[#4a7c59]/6 text-[#4a7c59] hover:bg-[#4a7c59]/12"
+                    activeFilter === chip.key ? "bg-[#4a7c59] text-white shadow-sm" : "bg-[#4a7c59]/6 text-[#4a7c59] hover:bg-[#4a7c59]/12"
                   }`}
                 >
                   {chip.label}
@@ -382,7 +392,17 @@ export default function GISHeader({ onFeatureSelect }: GISHeaderProps) {
   );
 }
 
-function HeaderBtn({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
+function HeaderBtn({
+  icon,
+  label,
+  onClick,
+  active,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick?: () => void;
+  active?: boolean;
+}) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -390,7 +410,7 @@ function HeaderBtn({ icon, label, onClick }: { icon: React.ReactNode; label: str
           variant="ghost"
           size="icon"
           onClick={onClick}
-          className="w-8 h-8 rounded-xl hover:bg-black/[0.04] text-[#888] hover:text-[#2a2a2a] transition-colors"
+          className={`w-8 h-8 rounded-xl transition-colors ${active ? "bg-[#4a7c59] text-white hover:bg-[#4a7c59]" : "hover:bg-black/[0.04] text-[#888] hover:text-[#2a2a2a]"}`}
         >
           {icon}
         </Button>
