@@ -75,7 +75,7 @@ const BlurText: React.FC<BlurTextProps> = ({
     () => [
       { opacity: 1, y: 0 }
     ],
-    [direction]
+    []
   );
 
   const fromSnapshot = animationFrom ?? defaultFrom;

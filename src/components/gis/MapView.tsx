@@ -24,9 +24,12 @@ import HeatmapController from "./map/HeatmapController";
 import AdminPointPickerController from "./map/AdminPointPickerController";
 import { POINT_LAYERS, PROP_LABELS, ESTRATO_COLORS, USO_COLORS } from "./map/constants";
 
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+type LeafletDefaultIconPrototype = typeof L.Icon.Default.prototype & { _getIconUrl?: () => string };
+type LeafletDefaultIconClass = typeof L.Icon.Default & { imagePath: string };
 
-(L.Icon.Default as any).imagePath = "";
+delete (L.Icon.Default.prototype as LeafletDefaultIconPrototype)._getIconUrl;
+
+(L.Icon.Default as LeafletDefaultIconClass).imagePath = "";
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: iconRetina,
   iconUrl: iconUrl,

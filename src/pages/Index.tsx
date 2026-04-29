@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, lazy, Suspense, useMemo } from "react";
 import { AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
 import GISHeader from "@/components/gis/GISHeader";
 import MapView, { DirectionStep } from "@/components/gis/MapView";
 import { BASE_MAPS, BaseMapKey } from "@/data/base-maps";
@@ -40,9 +39,8 @@ const normalizeId = (value: string) =>
     .replace(/^_+|_+$/g, "");
 
 const Index = () => {
-  const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const session = getStoredSession();
+  const [session, setSession] = useState(() => getStoredSession());
   const canAdmin = isSuperAdmin(session);
   const initialState = useMemo(() => loadAdminMapState(), []);
   const [layers, setLayers] = useState<LayerConfig[]>(initialState.layers);
@@ -73,10 +71,14 @@ const Index = () => {
   const { toast, dismiss } = useToast();
 
   useEffect(() => {
-    if (!session) {
-      navigate("/login", { replace: true });
-    }
-  }, [navigate, session]);
+    const sync = () => setSession(getStoredSession());
+    window.addEventListener("storage", sync);
+    window.addEventListener("focus", sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("focus", sync);
+    };
+  }, []);
 
   useEffect(() => () => { dismiss(); }, [dismiss]);
 
@@ -261,8 +263,11 @@ const Index = () => {
 
   const handleLogout = useCallback(() => {
     clearStoredSession();
-    navigate("/login", { replace: true });
-  }, [navigate]);
+    setSession(null);
+    setAdminPanelOpen(false);
+    setIsPickingAdminPoint(false);
+    toast({ title: "Sesion cerrada", description: "Volviste al modo usuario normal." });
+  }, [toast]);
 
   const handleToggleAdminPointPicker = useCallback(() => {
     if (!canAdmin) return;
@@ -343,6 +348,62 @@ const Index = () => {
     [canAdmin, toast],
   );
 
+  const handleUpdateLayer = useCallback(
+    (layerId: string, partial: Partial<LayerConfig>) => {
+      if (!canAdmin) return;
+      setLayers((prev) => prev.map((layer) => (layer.id === layerId ? { ...layer, ...partial } : layer)));
+      toast({ title: "Capa actualizada", description: `Se guardaron los cambios de ${layerId}.` });
+    },
+    [canAdmin, toast],
+  );
+
+  const handleUpdatePoint = useCallback(
+    (
+      layerId: string,
+      featureIndex: number,
+      input: { name: string; type: string; description: string; lat: number; lng: number },
+    ) => {
+      if (!canAdmin) return;
+      const currentData = dataMap[layerId];
+      if (!currentData) return;
+      if (!input.name.trim() || Number.isNaN(input.lat) || Number.isNaN(input.lng)) {
+        toast({ title: "Datos incompletos", description: "Nombre, latitud y longitud son obligatorios.", variant: "destructive" });
+        return;
+      }
+
+      let updatedFeature: GeoJSON.Feature | null = null;
+      const nextFeatures = currentData.features.map((feature, index) => {
+        if (index !== featureIndex) return feature;
+        const next = {
+          ...feature,
+          properties: {
+            ...(feature.properties || {}),
+            nombre: input.name.trim(),
+            tipo: input.type.trim() || "Punto",
+            descripcion: input.description.trim(),
+          },
+          geometry: { type: "Point", coordinates: [input.lng, input.lat] },
+        } as GeoJSON.Feature;
+        updatedFeature = next;
+        return next;
+      });
+
+      setDataOverrides((prev) => ({ ...prev, [layerId]: { type: "FeatureCollection", features: nextFeatures } }));
+      setLayers((prev) => prev.map((layer) => (layer.id === layerId ? { ...layer, visible: true } : layer)));
+      if (updatedFeature) {
+        setSearchTarget(updatedFeature);
+        setSelectedFeature(updatedFeature);
+      }
+      toast({ title: "Punto actualizado", description: `Se guardaron los cambios en ${layerId}.` });
+    },
+    [canAdmin, dataMap, toast],
+  );
+
+  const handleFocusFeature = useCallback((feature: GeoJSON.Feature) => {
+    setSearchTarget(feature);
+    setSelectedFeature(feature);
+  }, []);
+
   const handleAddPoint = useCallback(
     (input: { layerId: string; name: string; type: string; description: string; lat: number; lng: number }) => {
       if (!canAdmin) return;
@@ -351,27 +412,32 @@ const Index = () => {
         return;
       }
 
+      const newFeature = createPointFeature({
+        name: input.name.trim(),
+        type: input.type.trim(),
+        description: input.description.trim(),
+        lat: input.lat,
+        lng: input.lng,
+      });
+
       const currentData = dataMap[input.layerId] || createEmptyFeatureCollection();
       const nextCollection: GeoJSON.FeatureCollection = {
         type: "FeatureCollection",
-        features: [
-          ...currentData.features,
-          createPointFeature({
-            name: input.name.trim(),
-            type: input.type.trim(),
-            description: input.description.trim(),
-            lat: input.lat,
-            lng: input.lng,
-          }),
-        ],
+        features: [...currentData.features, newFeature],
       };
 
       setDataOverrides((prev) => ({ ...prev, [input.layerId]: nextCollection }));
       setLayers((prev) =>
-        prev.map((layer) => (layer.id === input.layerId ? { ...layer, geometryType: "Point", source: layer.source ?? "core" } : layer)),
+        prev.map((layer) =>
+          layer.id === input.layerId
+            ? { ...layer, geometryType: "Point", visible: true, source: layer.source ?? "core" }
+            : layer,
+        ),
       );
       setPickedAdminCoords(null);
-      toast({ title: "Punto agregado", description: `Se agrego un nuevo registro en ${input.layerId}.` });
+      setSearchTarget(newFeature);
+      setSelectedFeature(newFeature);
+      toast({ title: "Punto agregado", description: `Se agrego ${input.name.trim()} y se centro el mapa.` });
     },
     [canAdmin, dataMap, toast],
   );
@@ -466,9 +532,12 @@ const Index = () => {
             layers={layers}
             dataMap={dataMap}
             onCreateLayer={handleCreateLayer}
+            onUpdateLayer={handleUpdateLayer}
             onDeleteLayer={handleDeleteLayer}
             onAddPoint={handleAddPoint}
+            onUpdatePoint={handleUpdatePoint}
             onDeletePoint={handleDeletePoint}
+            onFocusFeature={handleFocusFeature}
             onResetSystem={handleResetSystem}
             onToggleMapPicker={handleToggleAdminPointPicker}
             isPickingFromMap={isPickingAdminPoint}

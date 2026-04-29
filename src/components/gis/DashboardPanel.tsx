@@ -192,7 +192,13 @@ export default function DashboardPanel({ isOpen, onClose }: DashboardPanelProps)
                       labelLine={{ stroke: "#8b7d6b", strokeWidth: 1 }} style={{ fontSize: "10px", fontWeight: 600 }}>
                       {stats.estratificacion.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="transparent" />)}
                     </Pie>
-                    <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number, _: string, p: any) => [`${v}% · ${p.payload.viviendas?.toLocaleString("es-CO")} viv.`, _]} />
+                    <Tooltip
+                      contentStyle={TOOLTIP_STYLE}
+                      formatter={(value: number, label: string, payload: { payload?: { viviendas?: number } }) => {
+                        const viviendas = payload.payload?.viviendas?.toLocaleString("es-CO") ?? "0";
+                        return [`${value}% · ${viviendas} viv.`, label];
+                      }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px", marginTop: "4px" }}>

@@ -3,6 +3,20 @@ import { useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet.heat";
 
+type HeatPoint = [number, number, number];
+type HeatLayerOptions = {
+  radius: number;
+  blur: number;
+  maxZoom: number;
+  max: number;
+  gradient: Record<number, string>;
+};
+
+type HeatLayer = L.Layer;
+type HeatmapLeaflet = typeof L & {
+  heatLayer(points: HeatPoint[], options: HeatLayerOptions): HeatLayer;
+};
+
 interface HeatmapControllerProps {
   enabled: boolean;
   dataMap: Record<string, GeoJSON.FeatureCollection>;
@@ -11,11 +25,12 @@ interface HeatmapControllerProps {
 
 export default function HeatmapController({ enabled, dataMap, pointLayerIds }: HeatmapControllerProps) {
   const map = useMap();
-  const heatLayerRef = useRef<any>(null);
+  const heatLayerRef = useRef<HeatLayer | null>(null);
 
   useEffect(() => {
     if (enabled) {
-      const points: [number, number, number][] = [];
+      const heatmap = L as HeatmapLeaflet;
+      const points: HeatPoint[] = [];
       Array.from(pointLayerIds || []).forEach((layerId) => {
         const source = dataMap[layerId];
         if (!source) return;
@@ -26,7 +41,7 @@ export default function HeatmapController({ enabled, dataMap, pointLayerIds }: H
       });
 
       if (!heatLayerRef.current) {
-        heatLayerRef.current = (L as any).heatLayer(points, {
+        heatLayerRef.current = heatmap.heatLayer(points, {
           radius: 30,
           blur: 20,
           maxZoom: 17,

@@ -26,6 +26,13 @@ interface SearchEntry {
   feature: GeoJSON.Feature;
 }
 
+interface NominatimResult {
+  name?: string;
+  lon: string;
+  lat: string;
+  display_name?: string;
+}
+
 const CATEGORY_CONFIG: Record<Exclude<CategoryKey, "todos">, { label: string; data: GeoJSON.FeatureCollection }> = {
   comunas: { label: "Comunas", data: comunasGeoJSON },
   barrios: { label: "Barrios", data: barriosGeoJSON },
@@ -102,10 +109,10 @@ export default function GISHeader({
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(`${q}, Ocana, Colombia`)}&limit=3&timeout=5`,
       );
-      const data = await response.json();
+      const data = (await response.json()) as NominatimResult[];
 
       if (data.length > 0) {
-        const nominatimResults: SearchEntry[] = data.map((item: any) => ({
+        const nominatimResults: SearchEntry[] = data.map((item) => ({
           text: (item.name || "").toLowerCase(),
           category: "todos" as CategoryKey,
           categoryLabel: "Nominatim",

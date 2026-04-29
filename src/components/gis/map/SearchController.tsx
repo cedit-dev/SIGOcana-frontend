@@ -8,23 +8,19 @@ export default function SearchController({ feature }: { feature: GeoJSON.Feature
   useEffect(() => {
     if (!feature) return;
 
-    const geometry = feature.geometry as any;
-    let coords: [number, number] | null = null;
+    const geometry = feature.geometry;
+    if (!geometry) return;
 
     if (geometry.type === "Point") {
-      coords = [geometry.coordinates[1], geometry.coordinates[0]];
-    } else if (geometry.type === "Polygon") {
-      const bounds = L.geoJSON(feature).getBounds();
-      map.flyToBounds(bounds, { padding: [50, 50], duration: 1 });
-      return;
-    } else if (geometry.type === "LineString") {
-      const bounds = L.geoJSON(feature).getBounds();
-      map.flyToBounds(bounds, { padding: [50, 50], duration: 1 });
+      const coords: [number, number] = [geometry.coordinates[1], geometry.coordinates[0]];
+      map.flyTo(coords, 16, { duration: 1 });
       return;
     }
 
-    if (coords) {
-      map.flyTo(coords, 16, { duration: 1 });
+    if (geometry.type === "Polygon" || geometry.type === "MultiPolygon" || geometry.type === "LineString" || geometry.type === "MultiLineString") {
+      const bounds = L.geoJSON(feature).getBounds();
+      map.flyToBounds(bounds, { padding: [50, 50], duration: 1 });
+      return;
     }
   }, [feature, map]);
 

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, type ElementType } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
@@ -81,7 +81,7 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { LayerConfig, LAYER_CATEGORIES } from "@/data/ocana-geodata";
 
-const ICON_MAP: Record<string, any> = {
+const ICON_MAP: Record<string, ElementType<{ className?: string }>> = {
   Layout, HardHat, Building2, Leaf, BarChart3, Home, GraduationCap,
   Hospital, Landmark, Waves, TreePine, Construction, Road: RoadIcon,
   // Category icons
@@ -139,7 +139,11 @@ export default function LayerPanel({
   const toggleCategory = (id: string) => {
     setExpandedCategories(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };

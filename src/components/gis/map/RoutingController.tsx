@@ -296,7 +296,7 @@ export default function RoutingController({
 
         const bounds = routeLayerRef.current.getBounds();
         const currentZoom = map.getZoom();
-        const boundsZoom = map.getBoundsZoom(bounds, false, [60, 60] as any);
+        const boundsZoom = map.getBoundsZoom(bounds, false, [60, 60]);
         const targetZoom = Math.max(currentZoom, Math.min(boundsZoom, 16));
         map.flyToBounds(bounds, { padding: [60, 60], maxZoom: targetZoom, duration: 1.2 });
 
@@ -306,9 +306,12 @@ export default function RoutingController({
         onRouteFoundRef.current({ distance, duration, steps });
         onLoadingChangeRef.current?.(false);
 
-      } catch (err: any) {
+      } catch (err: unknown) {
         onLoadingChangeRef.current?.(false);
-        if (err?.name === "AbortError") {
+        const errorName =
+          typeof err === "object" && err !== null && "name" in err ? String((err as { name?: unknown }).name) : "";
+
+        if (errorName === "AbortError") {
           onErrorRef.current?.("El servidor de rutas no respondió. Intenta de nuevo en unos momentos.");
         } else {
           onErrorRef.current?.("Error al calcular la ruta. Verifica tu conexión a internet.");
