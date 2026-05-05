@@ -26,7 +26,13 @@ export default function PointLayer({ data, color, opacity, onFeatureClick, icon 
 
       clusterRef.current.clearLayers();
       data.features.forEach((f) => {
-        const coords = (f.geometry as GeoJSON.Point).coordinates;
+        // Skip features without geometry or with non-point geometry
+        if (!f.geometry || f.geometry.type !== "Point") return;
+        
+        const coords = f.geometry.coordinates;
+        // Basic validation for coordinate array
+        if (!coords || coords.length < 2 || coords[0] === null || coords[1] === null) return;
+
         const marker = L.circleMarker([coords[1], coords[0]], {
           radius: 8,
           fillColor: color,
@@ -38,9 +44,9 @@ export default function PointLayer({ data, color, opacity, onFeatureClick, icon 
 
         const popupHTML = `
           <div class="custom-popup">
-            <h3>${icon} ${f.properties?.nombre || "Sin nombre"}</h3>
+            <h3>${icon} ${f.properties?.nombre || f.properties?.name || "Sin nombre"}</h3>
             ${Object.entries(f.properties || {})
-              .filter(([k]) => k !== "nombre")
+              .filter(([k]) => k !== "nombre" && k !== "name")
               .map(([k, v]) => {
                 const label = PROP_LABELS[k] ?? k.replace(/_/g, " ");
                 const val = v === null || v === undefined ? "—" : String(v);
@@ -75,7 +81,9 @@ export default function PointLayer({ data, color, opacity, onFeatureClick, icon 
 
   return (
     <>
-      {data.features.map((f, i) => {
+      {data.features
+        .filter(f => f.geometry && f.geometry.type === "Point" && f.geometry.coordinates && f.geometry.coordinates.length >= 2)
+        .map((f, i) => {
         const coords = (f.geometry as GeoJSON.Point).coordinates;
         return (
           <CircleMarker
@@ -95,8 +103,8 @@ export default function PointLayer({ data, color, opacity, onFeatureClick, icon 
           >
             <Popup className="custom-popup">
               <div>
-                <h3>{icon} {f.properties?.nombre}</h3>
-                {Object.entries(f.properties || {}).filter(([k]) => k !== "nombre").map(([k, v]) => (
+                <h3>{icon} {f.properties?.nombre || f.properties?.name || "Sin nombre"}</h3>
+                {Object.entries(f.properties || {}).filter(([k]) => k !== "nombre" && k !== "name").map(([k, v]) => (
                   <div className="attr-row" key={k}>
                     <span className="attr-label">{PROP_LABELS[k] ?? k.replace(/_/g, " ")}</span>
                     <span className="attr-value">{v === null || v === undefined ? "—" : String(v)}</span>

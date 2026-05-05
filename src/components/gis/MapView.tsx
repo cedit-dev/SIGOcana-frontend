@@ -49,69 +49,30 @@ export interface DirectionStep {
   name?: string;
 }
 
-interface MapViewProps {
-  layers: LayerConfig[];
-  dataMap: Record<string, GeoJSON.FeatureCollection>;
-  pointLayerIds?: Set<string>;
-  baseMap: BaseMapKey;
-  onFeatureClick: (feature: GeoJSON.Feature) => void;
-  zoomToExtentTrigger?: number;
-  locateMeTrigger?: number;
-  onZoomChange?: (zoom: number) => void;
-  onMouseMove?: (coords: { lat: number; lng: number }) => void;
-  searchTarget?: GeoJSON.Feature | null;
-  isMeasuring?: boolean;
-  onMeasureUpdate?: (distance: number) => void;
-  clearMeasureTrigger?: number;
-  isRouting?: boolean;
-  onRouteFound?: (info: { distance: number; duration: number; steps: DirectionStep[] }) => void;
-  onLoadingRouteChange?: (loading: boolean) => void;
-  onRouteError?: (msg: string) => void;
-  onClearRoute?: () => void;
-  clearRouteTrigger?: number;
-  isMeasuringArea?: boolean;
-  onAreaUpdate?: (area: number) => void;
-  clearAreaTrigger?: number;
-  isBuffering?: boolean;
-  bufferRadius?: number;
-  onBufferCreated?: (count: number) => void;
-  clearBufferTrigger?: number;
-  isHeatmap?: boolean;
-  isPickingAdminPoint?: boolean;
-  onAdminPointPick?: (coords: { lat: number; lng: number }) => void;
-}
+import { useMapContext } from "./MapContext";
 
 function MapView({
-  layers,
-  dataMap,
-  pointLayerIds,
-  baseMap,
   onFeatureClick,
-  zoomToExtentTrigger,
-  locateMeTrigger,
-  onZoomChange,
-  onMouseMove,
-  searchTarget,
-  isMeasuring,
-  onMeasureUpdate,
-  clearMeasureTrigger,
-  isRouting,
-  onRouteFound,
-  onLoadingRouteChange,
-  onRouteError,
-  onClearRoute,
-  clearRouteTrigger,
-  isMeasuringArea,
-  onAreaUpdate,
-  clearAreaTrigger,
-  isBuffering,
-  bufferRadius,
-  onBufferCreated,
-  clearBufferTrigger,
-  isHeatmap,
   isPickingAdminPoint,
   onAdminPointPick,
-}: MapViewProps) {
+}: {
+  onFeatureClick: (feature: GeoJSON.Feature) => void;
+  isPickingAdminPoint?: boolean;
+  onAdminPointPick?: (coords: { lat: number; lng: number }) => void;
+}) {
+  const {
+    layers,
+    dataMap,
+    pointLayerIds,
+    baseMap,
+    zoomTrigger,
+    locateTrigger,
+    setZoom,
+    setMouseCoords,
+    searchTarget,
+    tools,
+  } = useMapContext();
+
   const visibleLayers = layers.filter((l) => l.visible);
   const [userLocation, setUserLocation] = useState<L.LatLng | null>(null);
 
@@ -144,9 +105,9 @@ function MapView({
       return (feature: GeoJSON.Feature, layer: L.Layer) => {
         if (feature.properties) {
           const props = feature.properties;
-          let html = `<div class="custom-popup"><h3>${props.nombre || "Sin nombre"}</h3>`;
+          let html = `<div class="custom-popup"><h3>${props.nombre || props.name || "Sin nombre"}</h3>`;
           Object.entries(props)
-            .filter(([k]) => k !== "nombre")
+            .filter(([k]) => k !== "nombre" && k !== "name")
             .forEach(([k, v]) => {
               const label = PROP_LABELS[k] ?? k.replace(/_/g, " ");
               const val = v === null || v === undefined ? "—" : String(v);
@@ -166,28 +127,34 @@ function MapView({
       <ZoomControl position="bottomleft" />
       <BaseMapLayer baseMap={baseMap} />
 
-      <MapController zoomToExtentTrigger={zoomToExtentTrigger} locateMeTrigger={locateMeTrigger} onLocationFound={setUserLocation} />
-      <MapEventsTracker onZoomChange={onZoomChange} onMouseMove={onMouseMove} />
+      <MapController zoomToExtentTrigger={zoomTrigger} locateMeTrigger={locateTrigger} onLocationFound={setUserLocation} />
+      <MapEventsTracker onZoomChange={setZoom} onMouseMove={setMouseCoords} />
       <SearchController feature={searchTarget || null} />
-      <MeasureController enabled={isMeasuring || false} onDistanceUpdate={onMeasureUpdate || (() => {})} clearTrigger={clearMeasureTrigger} />
-      <RoutingController
-        enabled={(isRouting && !!userLocation) || false}
-        userLocation={userLocation}
-        onRouteFound={onRouteFound || (() => {})}
-        onLoadingChange={onLoadingRouteChange}
-        onError={onRouteError}
-        onClearRoute={onClearRoute}
-        clearTrigger={clearRouteTrigger}
+      <MeasureController
+        enabled={tools.activeTool === "measure"}
+        onDistanceUpdate={tools.setMeasureDistance}
+        clearTrigger={tools.clearMeasureTrigger}
       />
-      <AreaMeasureController enabled={isMeasuringArea || false} onAreaUpdate={onAreaUpdate || (() => {})} clearTrigger={clearAreaTrigger} />
+      <RoutingController
+        enabled={(tools.activeTool === "routing" && !!userLocation) || false}
+        userLocation={userLocation}
+        onRouteFound={tools.setRouteInfo}
+        onLoadingChange={tools.setIsLoadingRoute}
+        onClearRoute={() => tools.clearToolData("routing")}
+        clearTrigger={tools.clearRouteTrigger}
+      />
+      <AreaMeasureController
+        enabled={tools.activeTool === "measureArea"}
+        onAreaUpdate={tools.setMeasureArea}
+        clearTrigger={tools.clearAreaTrigger}
+      />
       <BufferController
-        enabled={isBuffering || false}
-        radiusMeters={bufferRadius || 500}
-        onBufferCreated={onBufferCreated}
-        clearTrigger={clearBufferTrigger}
+        enabled={tools.activeTool === "buffer"}
+        radiusMeters={tools.bufferRadius}
+        clearTrigger={tools.clearBufferTrigger}
         dataMap={dataMap}
       />
-      <HeatmapController enabled={isHeatmap || false} dataMap={dataMap} pointLayerIds={pointLayerIds} />
+      <HeatmapController enabled={tools.isHeatmap} dataMap={dataMap} pointLayerIds={pointLayerIds} />
       <AdminPointPickerController enabled={isPickingAdminPoint || false} onPick={onAdminPointPick || (() => {})} />
 
       {visibleLayers.map((layer) => {

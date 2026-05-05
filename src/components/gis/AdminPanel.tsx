@@ -17,7 +17,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { LAYER_CATEGORIES, LayerConfig } from "@/data/ocana-geodata";
+import { LayerConfig } from "@/data/ocana-geodata";
+import { useMapContext } from "./MapContext";
+import { useGisParser } from "@/hooks/useGisParser";
+import { Loader2, Upload } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface CreateLayerInput {
   name: string;
@@ -51,6 +55,7 @@ interface AdminPanelProps {
   dataMap: Record<string, GeoJSON.FeatureCollection>;
   onCreateLayer: (input: CreateLayerInput) => void;
   onUpdateLayer: (layerId: string, partial: Partial<LayerConfig>) => void;
+  onImportLayer: (name: string, category: string, geojson: GeoJSON.FeatureCollection) => void;
   onDeleteLayer: (layerId: string) => void;
   onAddPoint: (input: AddPointInput) => void;
   onUpdatePoint: (layerId: string, index: number, input: UpdatePointInput) => void;
@@ -71,14 +76,6 @@ const ICON_OPTIONS = [
   "Star", "Flag", "Eye", "User", "Users", "Truck", "Bike",
 ];
 
-const DEFAULT_LAYER_FORM: CreateLayerInput = {
-  name: "",
-  category: LAYER_CATEGORIES[0]?.id ?? "ambiente",
-  color: "#4a7c59",
-  icon: "MapPin",
-  description: "",
-};
-
 const DEFAULT_POINT_FORM = {
   layerId: "",
   name: "",
@@ -88,13 +85,21 @@ const DEFAULT_POINT_FORM = {
   lng: "",
 };
 
-type TabKey = "crear" | "capas" | "puntos";
+type TabKey = "crear" | "importar" | "capas" | "puntos";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "crear", label: "Crear" },
+  { key: "importar", label: "Importar" },
   { key: "capas", label: "Capas" },
   { key: "puntos", label: "Puntos" },
 ];
+
+import * as LucideIcons from "lucide-react";
+
+const IconRenderer = ({ name, className }: { name: string, className?: string }) => {
+  const IconComponent = (LucideIcons as any)[name] || LucideIcons.Info;
+  return <IconComponent className={className} />;
+};
 
 export default function AdminPanel({
   isOpen,
@@ -103,6 +108,7 @@ export default function AdminPanel({
   dataMap,
   onCreateLayer,
   onUpdateLayer,
+  onImportLayer,
   onDeleteLayer,
   onAddPoint,
   onUpdatePoint,
@@ -113,8 +119,31 @@ export default function AdminPanel({
   isPickingFromMap,
   pickedCoords,
 }: AdminPanelProps) {
+  const { categories } = useMapContext();
+  const { toast } = useToast();
+  const { parseFile, isParsing } = useGisParser();
   const [tab, setTab] = useState<TabKey>("crear");
-  const [layerForm, setLayerForm] = useState<CreateLayerInput>(DEFAULT_LAYER_FORM);
+  const [layerForm, setLayerForm] = useState<CreateLayerInput>({
+    name: "",
+    category: "",
+    color: "#4a7c59",
+    icon: "MapPin",
+    description: "",
+  });
+  
+  const [importCategory, setImportCategory] = useState<string>("");
+
+  useEffect(() => {
+    if (categories.length > 0 && !importCategory) {
+      setImportCategory(categories[0].id);
+    }
+  }, [categories, importCategory]);
+
+  useEffect(() => {
+    if (categories.length > 0 && !layerForm.category) {
+      setLayerForm(prev => ({ ...prev, category: categories[0].id }));
+    }
+  }, [categories, layerForm.category]);
   const [pointForm, setPointForm] = useState(DEFAULT_POINT_FORM);
   const [layerSearch, setLayerSearch] = useState("");
   const [pointSearch, setPointSearch] = useState("");
@@ -285,7 +314,7 @@ export default function AdminPanel({
                   onChange={(e) => setLayerForm((prev) => ({ ...prev, category: e.target.value }))}
                   className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                 >
-                  {LAYER_CATEGORIES.map((category) => (
+                  {categories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
@@ -323,13 +352,134 @@ export default function AdminPanel({
                   className="w-full gap-2"
                   onClick={() => {
                     onCreateLayer(layerForm);
-                    setLayerForm(DEFAULT_LAYER_FORM);
+                    setLayerForm({
+                      name: "",
+                      category: categories[0]?.id || "",
+                      color: "#4a7c59",
+                      icon: "MapPin",
+                      description: "",
+                    });
                     setTab("capas");
                   }}
                 >
                   <Plus className="w-4 h-4" />
                   Crear capa
                 </Button>
+              </section>
+            )}
+
+            {tab === "importar" && (
+              <section className="space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-[#2c1e0f]">Importar Datos Externos</h3>
+                  <p className="text-[11px] text-[#8b7d6b]">
+                    Sube archivos KML o GeoJSON para crear nuevas capas automáticamente.
+                    El procesamiento se realiza en segundo plano para no afectar el mapa.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#4a7c59]/80">
+                    Destino: Categoría del Sistema
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {categories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => setImportCategory(cat.id)}
+                        className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
+                          importCategory === cat.id
+                            ? "bg-[#4a7c59] border-[#4a7c59] text-white shadow-md shadow-[#4a7c59]/20"
+                            : "bg-white/50 border-[#4a7c59]/10 text-[#555] hover:bg-white/80"
+                        }`}
+                      >
+                        <IconRenderer name={cat.icon} className="w-4 h-4 mb-1" />
+                        <span className="text-[9px] font-medium leading-tight text-center line-clamp-1">{cat.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div 
+                  className={`relative group border-2 border-dashed rounded-2xl p-8 transition-all cursor-pointer overflow-hidden ${
+                    isParsing ? 'bg-white/20 border-[#4a7c59]/10 cursor-not-allowed' : 'border-[#4a7c59]/20 hover:border-[#4a7c59]/40 bg-white/40'
+                  }`}
+                  onClick={() => !isParsing && document.getElementById('gis-file-upload')?.click()}
+                >
+                  <input
+                    id="gis-file-upload"
+                    type="file"
+                    className="hidden"
+                    accept=".kml,.json,.geojson"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      
+                      const result = await parseFile(file);
+                      if (result.success && result.geojson) {
+                        const baseName = result.fileName?.split('.')[0] || "Capa Importada";
+                        const newLayerName = `${baseName} (${new Date().toLocaleTimeString()})`;
+                        
+                        onImportLayer(
+                          newLayerName,
+                          importCategory,
+                          result.geojson
+                        );
+
+                        toast({ 
+                          title: "Archivo procesado", 
+                          description: `Se detectaron ${result.geojson.features.length} elementos en ${baseName}.` 
+                        });
+                      } else {
+                        toast({ 
+                          title: "Error de importación", 
+                          description: result.error || "No se pudo procesar el archivo.",
+                          variant: "destructive"
+                        });
+                      }
+                    }}
+                  />
+                  
+                  <div className="flex flex-col items-center justify-center text-center space-y-3">
+                    <div className="p-3 rounded-full bg-[#4a7c59]/10 text-[#4a7c59] group-hover:scale-110 transition-transform">
+                      {isParsing ? (
+                        <Loader2 className="w-6 h-6 animate-spin" />
+                      ) : (
+                        <Upload className="w-6 h-6" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-bold text-[#2c1e0f]">
+                        {isParsing ? "Procesando archivo..." : "Seleccionar Archivo"}
+                      </p>
+                      <p className="text-[10px] text-[#8b7d6b] mt-1">
+                        KML, GeoJSON o JSON hasta 50MB
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {isParsing && (
+                    <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] flex items-center justify-center" />
+                  )}
+                </div>
+
+                <div className="p-3 rounded-xl bg-[#d4a96a]/5 border border-[#d4a96a]/10">
+                  <h4 className="text-[11px] font-bold text-[#a87740] uppercase tracking-wider mb-2">Consejos de Uso</h4>
+                  <ul className="space-y-1.5">
+                    <li className="text-[10.5px] text-[#8b7d6b] flex items-start gap-2">
+                      <div className="w-1 h-1 rounded-full bg-[#d4a96a] mt-1.5 flex-shrink-0" />
+                      Los archivos KML se convertirán automáticamente a GeoJSON.
+                    </li>
+                    <li className="text-[10.5px] text-[#8b7d6b] flex items-start gap-2">
+                      <div className="w-1 h-1 rounded-full bg-[#d4a96a] mt-1.5 flex-shrink-0" />
+                      La geometría se cargará en la categoría predeterminada.
+                    </li>
+                    <li className="text-[10.5px] text-[#8b7d6b] flex items-start gap-2">
+                      <div className="w-1 h-1 rounded-full bg-[#d4a96a] mt-1.5 flex-shrink-0" />
+                      Para archivos muy grandes, verás una barra de progreso.
+                    </li>
+                  </ul>
+                </div>
               </section>
             )}
 
@@ -404,7 +554,7 @@ export default function AdminPanel({
                               onChange={(e) => setLayerDraft((prev) => ({ ...prev, category: e.target.value }))}
                               className="w-full h-9 rounded-md border border-input bg-background px-3 text-[13px]"
                             >
-                              {LAYER_CATEGORIES.map((category) => (
+                              {categories.map((category) => (
                                 <option key={category.id} value={category.id}>
                                   {category.name}
                                 </option>

@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Agent Skills
+.agents
+.skills
+.claude
+.junie
+.cursor

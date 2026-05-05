@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { ChevronDown, ChevronUp, ListFilter, Eye, EyeOff } from "lucide-react";
-import { LayerConfig, LAYER_CATEGORIES } from "@/data/ocana-geodata";
+import { LayerConfig } from "@/data/ocana-geodata";
+import { useMapContext } from "./MapContext";
 
 interface LegendPanelProps {
   layers: LayerConfig[];
@@ -9,13 +10,14 @@ interface LegendPanelProps {
 }
 
 export default function LegendPanel({ layers, onToggleLayer }: LegendPanelProps) {
+  const { categories } = useMapContext();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const visibleLayers = layers.filter(l => l.visible);
 
   if (visibleLayers.length === 0) return null;
 
   // Group visible layers by category
-  const categoryMap = new Map(LAYER_CATEGORIES.map(c => [c.id, c.name]));
+  const categoryMap = new Map(categories.map(c => [c.id, c.name]));
 
   return (
     <motion.div
