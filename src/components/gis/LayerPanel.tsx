@@ -1,6 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, type ElementType } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import BlurText from "@/components/BlurText";
 import {
   ChevronDown,
   ChevronRight,
@@ -80,9 +79,10 @@ import {
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import { LayerConfig, LAYER_CATEGORIES } from "@/data/ocana-geodata";
+import { LayerConfig } from "@/data/ocana-geodata";
+import { useMapContext } from "./MapContext";
 
-const ICON_MAP: Record<string, any> = {
+const ICON_MAP: Record<string, ElementType<{ className?: string }>> = {
   Layout, HardHat, Building2, Leaf, BarChart3, Home, GraduationCap,
   Hospital, Landmark, Waves, TreePine, Construction, Road: RoadIcon,
   // Category icons
@@ -133,6 +133,7 @@ export default function LayerPanel({
   layers, onToggleLayer, onOpacityChange,
   isOpen, onClose
 }: LayerPanelProps) {
+  const { categories, isLoading } = useMapContext();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set([]));
   const [showFeatured, setShowFeatured] = useState(true);
   const [search, setSearch] = useState("");
@@ -140,12 +141,16 @@ export default function LayerPanel({
   const toggleCategory = (id: string) => {
     setExpandedCategories(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
 
-  const expandAll = () => setExpandedCategories(new Set(LAYER_CATEGORIES.map(c => c.id)));
+  const expandAll = () => setExpandedCategories(new Set(categories.map(c => c.id)));
   const collapseAll = () => setExpandedCategories(new Set());
 
   const filteredLayers = search
@@ -180,8 +185,8 @@ export default function LayerPanel({
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-[#4a7c59]" />
-                <h2 className="font-semibold text-lg text-[#2a2a2a] min-w-[60px] h-[28px]">
-                  <BlurText text="Capas" animateBy="letters" delay={30} stepDuration={0.2} />
+                <h2 className="font-semibold text-lg text-[#2a2a2a]">
+                  Capas
                 </h2>
                 <span className="gis-badge bg-[#4a7c59]/10 text-[#4a7c59]">
                   {activeCount} activas
@@ -298,7 +303,25 @@ export default function LayerPanel({
 
           {/* Layer categories */}
           <div className="flex-1 overflow-y-auto custom-scrollbar">
-            {LAYER_CATEGORIES.map(cat => {
+            {isLoading ? (
+              <div className="p-6 space-y-4">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <div key={i} className="flex items-center gap-3 animate-pulse">
+                    <div className="w-10 h-10 bg-black/[0.05] rounded-lg" />
+                    <div className="space-y-2 flex-1">
+                      <div className="h-3 bg-black/[0.05] rounded w-3/4" />
+                      <div className="h-2 bg-black/[0.05] rounded w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : categories.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-40 text-[#bbb]">
+                <Info className="w-8 h-8 mb-2 opacity-20" />
+                <p className="text-xs font-medium">No se encontraron categorías</p>
+              </div>
+            ) : (
+              categories.map(cat => {
               const catLayers = filteredLayers.filter(l => l.category === cat.id);
               if (catLayers.length === 0) return null;
               const isExpanded = expandedCategories.has(cat.id);
@@ -391,8 +414,8 @@ export default function LayerPanel({
                     )}
                   </AnimatePresence>
                 </div>
-              );
-            })}
+              )
+            }))}
           </div>
 
           {/* Footer */}

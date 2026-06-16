@@ -10,7 +10,7 @@ interface ScrollAnimationOptions {
 export function useScrollAnimation(options: ScrollAnimationOptions = {}) {
     const { once = false, amount = 0.3, margin = "0px 0px -100px 0px" } = options;
     const ref = useRef(null);
-    const isInView = useInView(ref, { once, amount: amount as any, margin });
+    const isInView = useInView(ref, { once, amount, margin });
 
     return { ref, isInView };
 }

@@ -36,14 +36,14 @@ export default function PrinciplesSection() {
 
     const transition = reduceMotion
         ? { duration: 0 }
-        : { duration: 0.7, ease: [0.22, 1, 0.36, 1], type: "tween" as const };
+        : { duration: 0.5, ease: [0.22, 1, 0.36, 1], type: "tween" as const };
 
     return (
         <section className="py-24 bg-[#faf7f2]" ref={sectionRef}>
             <div className="max-w-7xl mx-auto px-6">
                 <motion.div
-                    initial={{ opacity: 0, y: 40, scale: 0.9, filter: "blur(6px)" }}
-                    animate={isVisible ? { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" } : { opacity: 0, y: 40, scale: 0.9, filter: "blur(6px)" }}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
                     transition={transition}
                     className="text-center mb-16"
                 >
@@ -54,7 +54,7 @@ export default function PrinciplesSection() {
                         Nuestra base de trabajo
                     </h2>
                     <p className="text-base text-[#6b5b4e] max-w-2xl mx-auto" style={{ lineHeight: 1.7 }}>
-                        Tres principios fundamentales guían el desarrollo y operación de SigOcaña.
+                        Tres principios fundamentales guían el desarrollo y operación de SIGOcaña.
                     </p>
                 </motion.div>
 
@@ -62,10 +62,11 @@ export default function PrinciplesSection() {
                     {PRINCIPLES.map((p, i) => (
                         <motion.div
                             key={p.title}
-                            initial={{ opacity: 0, y: 50, scale: 0.85, rotate: 2, filter: "blur(8px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
-                            animate={isVisible ? { opacity: 1, y: 0, scale: 1, rotate: 0, filter: "blur(0px)", boxShadow: "0 10px 25px rgba(0,0,0,0.1)" } : { opacity: 0, y: 50, scale: 0.85, rotate: 2, filter: "blur(8px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
                             transition={{ ...transition, delay: i * 0.04 }}
-                            className={`${p.bg} border ${p.border} rounded-2xl p-8 hover:shadow-lg hover:shadow-[#3d2e1e]/5 hover:-translate-y-1 transition-all duration-200 cursor-pointer`}
+                            className={`${p.bg} border ${p.border} rounded-2xl p-8 hover:shadow-lg hover:shadow-[#3d2e1e]/5 hover:-translate-y-1 transition-[transform,box-shadow] duration-200 cursor-pointer`}
+                            style={{ willChange: "transform, opacity" }}
                         >
                             <div className={`w-14 h-14 rounded-2xl bg-white flex items-center justify-center ${p.iconColor} mb-6 shadow-sm`}>
                                 <p.icon className="w-7 h-7" />

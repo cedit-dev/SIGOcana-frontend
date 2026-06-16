@@ -25,19 +25,19 @@ const OBJECTIVES = [
         icon: Handshake,
         title: "Colaboración Institucional",
         description: "Facilitar la cooperación entre entidades públicas y privadas mediante datos geoespaciales compartidos.",
-        gradient: "from-[#3b82f6] to-[#60a5fa]",
+        gradient: "from-[#5a8a68] to-[#7aaa88]",
     },
     {
         icon: Cpu,
         title: "Territorios Inteligentes",
         description: "Promover territorios inteligentes y resilientes mediante el uso de tecnología geoespacial avanzada.",
-        gradient: "from-[#8b5cf6] to-[#a78bfa]",
+        gradient: "from-[#6b7c5e] to-[#8a9a78]",
     },
     {
         icon: Users,
         title: "Participación Ciudadana",
         description: "Empoderar a los ciudadanos con herramientas para consultar y aportar información territorial.",
-        gradient: "from-[#ec4899] to-[#f472b6]",
+        gradient: "from-[#8e6f3e] to-[#c4a068]",
     },
 ];
 
@@ -48,14 +48,14 @@ export default function ObjectivesSection() {
 
     const transition = reduceMotion
         ? { duration: 0 }
-        : { duration: 0.7, ease: [0.22, 1, 0.36, 1], type: "tween" as const };
+        : { duration: 0.5, ease: [0.22, 1, 0.36, 1], type: "tween" as const };
 
     return (
         <section id="objetivos" className="py-24 bg-white" ref={sectionRef}>
             <div className="max-w-7xl mx-auto px-6">
                 <motion.div
-                    initial={{ opacity: 0, y: 40, scale: 0.9, filter: "blur(6px)" }}
-                    animate={isVisible ? { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" } : { opacity: 0, y: 40, scale: 0.9, filter: "blur(6px)" }}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
                     transition={transition}
                     className="text-center mb-16"
                 >
@@ -66,7 +66,7 @@ export default function ObjectivesSection() {
                         ¿Hacia dónde vamos?
                     </h2>
                     <p className="text-base text-[#6b5b4e] max-w-2xl mx-auto" style={{ lineHeight: 1.7 }}>
-                        SigOcaña busca transformar la gestión territorial del municipio a través de seis objetivos estratégicos.
+                        SIGOcaña busca transformar la gestión territorial del municipio a través de seis objetivos estratégicos.
                     </p>
                 </motion.div>
 
@@ -74,10 +74,11 @@ export default function ObjectivesSection() {
                     {OBJECTIVES.map((obj, i) => (
                         <motion.div
                             key={obj.title}
-                            initial={{ opacity: 0, y: 50, scale: 0.85, rotate: -2, filter: "blur(8px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
-                            animate={isVisible ? { opacity: 1, y: 0, scale: 1, rotate: 0, filter: "blur(0px)", boxShadow: "0 10px 25px rgba(0,0,0,0.1)" } : { opacity: 0, y: 50, scale: 0.85, rotate: -2, filter: "blur(8px)", boxShadow: "0 0px 0px rgba(0,0,0,0)" }}
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
                             transition={{ ...transition, delay: i * 0.04 }}
-                            className="group bg-[#faf7f2] border border-[#e8dfd4] rounded-2xl p-7 cursor-pointer hover:shadow-xl hover:shadow-[#3d2e1e]/5 hover:-translate-y-1 transition-all duration-200"
+                            className="group bg-[#faf7f2] border border-[#e8dfd4] rounded-2xl p-7 cursor-pointer hover:shadow-xl hover:shadow-[#3d2e1e]/5 hover:-translate-y-1 transition-[transform,box-shadow] duration-200"
+                        style={{ willChange: "transform, opacity" }}
                         >
                             <div
                                 className={`w-12 h-12 rounded-xl bg-gradient-to-br ${obj.gradient} flex items-center justify-center text-white mb-5 shadow-md group-hover:scale-110 transition-transform duration-200`}

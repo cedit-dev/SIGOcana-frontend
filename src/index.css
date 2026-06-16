@@ -127,6 +127,73 @@
   }
 }
 
+/* Lightweight CSS animation for background floating pins */
+@keyframes floatPin {
+
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.15;
+  }
+
+  50% {
+    transform: translateY(-8px);
+    opacity: 0.3;
+  }
+}
+
+/* GPU layer hints for continuously animated elements */
+[style*="heroFloat"],
+[style*="floatPin"],
+[style*="pinPulse"],
+[style*="marker-pulse"],
+[style*="status-blink"] {
+  will-change: transform, opacity;
+}
+
+/* Hero illustration float — CSS only, GPU-composited */
+@keyframes heroFloat {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+/* Pulsing map pins on hero illustration */
+@keyframes pinPulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+
+  50% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Scroll indicator bounce */
+@keyframes scrollBounce {
+
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  50% {
+    transform: translateX(-50%) translateY(8px);
+    opacity: 0.5;
+  }
+}
+
 @layer components {
   .gis-panel {
     @apply backdrop-blur-2xl rounded-2xl;
@@ -326,6 +393,11 @@
   border-radius: 8px 0 0 0 !important;
   padding: 2px 8px !important;
   color: #999 !important;
+}
+
+/* Measure labels — smooth fade-in */
+.measure-label {
+  transition: opacity 200ms ease-in;
 }
 
 /* Print styles */

@@ -1,73 +1,80 @@
-# Welcome to your Lovable project
+# SigOcaña
 
-## Project info
+SigOcaña es un Sistema de Información Geográfica (SIG) desarrollado para la gestión territorial del municipio de Ocaña, Norte de Santander. La plataforma permite la visualización y el análisis de datos geoespaciales críticos para la toma de decisiones y el conocimiento público del municipio.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## Características Principales
 
-There are several ways of editing your application.
+- **Cartografía Interactiva**: Navegación por capas de comunas, barrios, infraestructura educativa, salud y equipamientos gubernamentales.
+- **Panel de Estadísticas**: Visualización de datos demográficos, extensión territorial y distribución por edades y género mediante gráficos integrados.
+- **Herramientas de Búsqueda**: Localización de puntos de interés y delimitaciones territoriales dentro del sistema.
+- **Experiencia de Usuario**: Interfaz optimizada con transiciones fluidas y diseño adaptable a diferentes dispositivos.
+- **Rendimiento**: Animaciones basadas en CSS y optimización de carga de datos para asegurar una navegación rápida.
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Tecnologías
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Base de desarrollo**: React 18 y Vite.
+- **Tipado**: TypeScript.
+- **Diseño**: Tailwind CSS.
+- **Librería de Componentes**: shadcn/ui.
+- **Motor de Mapas**: Leaflet / React-Leaflet.
+- **Visualización de Datos**: Recharts.
+- **Animaciones**: Framer Motion y GSAP.
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Estructura del Directorio
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```text
+src/
+├── components/         # Componentes de interfaz y dashboard
+│   ├── gis/            # Lógica y vistas específicas del sistema SIG
+│   ├── landing/        # Secciones de la página principal
+│   └── ui/             # Componentes base
+├── data/               # Fuentes de datos GeoJSON y estadísticas
+├── hooks/              # Estado y lógica reutilizable
+├── pages/              # Vistas de la aplicación (Inicio, Mapa, Login)
+└── App.tsx             # Punto de entrada y ruteo
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Instalación
 
-**Use GitHub Codespaces**
+1. **Instalar dependencias**:
+   ```bash
+   npm install
+   ```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+2. **Ejecutar servidor local**:
+   ```bash
+   npm run dev
+   ```
 
-## What technologies are used for this project?
+---
 
-This project is built with:
+## Mejoras Recientes
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Se han implementado optimizaciones en el motor de animaciones para mejorar la respuesta del sistema durante el desplazamiento. Se eliminaron filtros visuales redundantes y se migraron animaciones de JavaScript a CSS para reducir la carga en el hilo principal del navegador.
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Hoja de Ruta
 
-## Can I connect a custom domain to my Lovable project?
+- Implementación de guía asistida para nuevos usuarios.
+- Ajuste automático de estilos de mapa según el tema visual.
+- Generación de reportes técnicos descargables.
+- Integración de datos meteorológicos locales.
+- Modelado de manzanas en entornos de visualización con profundidad.
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Información Institucional
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Este sistema forma parte de las herramientas de gestión de la Alcaldía de Ocaña. Los datos están basados en fuentes oficiales de DANE y el Plan de Ordenamiento Territorial (POT).
+
+---
+© 2026 SigOcaña · Sistema de Información Geográfica.

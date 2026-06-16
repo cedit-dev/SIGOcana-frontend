@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Map, ChevronDown } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
-import AnimatedBackground from "./AnimatedBackground";
 import BlurText from "@/components/BlurText";
 import GradientText from "@/components/GradientText";
 
@@ -15,21 +14,20 @@ export default function HeroSection() {
 
     return (
         <section id="inicio" className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden">
-            <AnimatedBackground />
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 w-full flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-16 flex-1">
-                {/* Left — Text (Centered within its column) */}
+            <div className="relative z-10 max-w-7xl mx-auto px-6 w-full flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-16 flex-1">
+                {/* Text block — order-2 on mobile (below image), order-1 on desktop (left) */}
                 <motion.div
                     initial={reduceMotion ? {} : { opacity: 0, x: -30 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ ...enterTransition, delay: 0.1 }}
-                    className="flex-1 max-w-xl flex flex-col items-center text-center lg:-mt-10"
+                    className="order-2 lg:order-1 flex-1 max-w-xl flex flex-col items-center text-center lg:-mt-10"
                 >
                     <motion.div
                         initial={reduceMotion ? {} : { opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ ...enterTransition, delay: 0.2 }}
-                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#4a7c59]/10 border border-[#4a7c59]/20 mb-4"
+                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#4a7c59]/10 border border-[#4a7c59]/20 mb-3"
                     >
                         <div className="w-2 h-2 rounded-full bg-[#4a7c59] animate-pulse" />
                         <GradientText
@@ -40,10 +38,10 @@ export default function HeroSection() {
                         </GradientText>
                     </motion.div>
 
-                    <div className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[0.92] tracking-tight text-[#2c1e0f] mb-4">
+                    <div className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[0.92] tracking-tight text-[#2c1e0f] mb-3">
                         <BlurText
                             text="DESCUBRE OCAÑA"
-                            className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[0.92] tracking-tight text-[#2c1e0f]"
+                            className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[0.92] tracking-tight text-[#2c1e0f] justify-center"
                             delay={100}
                             animateBy="words"
                             direction="top"
@@ -54,16 +52,16 @@ export default function HeroSection() {
                         initial={reduceMotion ? {} : { opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ ...enterTransition, delay: 0.35 }}
-                        className="text-lg sm:text-xl text-[#6b5b4e] font-medium leading-relaxed mb-6 max-w-md" style={{ lineHeight: 1.6 }}
+                        className="hidden sm:block text-lg sm:text-xl text-[#6b5b4e] font-medium leading-relaxed mb-6 max-w-md" style={{ lineHeight: 1.6 }}
                     >
-                        Tu guía digital interactiva para explorar, analizar y gestionar la información geoespacial del municipio.
+                        Plataforma oficial de información geoespacial para la planificación territorial, gestión pública y transparencia del municipio de Ocaña, Norte de Santander.
                     </motion.p>
 
                     <motion.div
                         initial={reduceMotion ? {} : { opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ ...enterTransition, delay: 0.4 }}
-                        className="flex flex-wrap items-center justify-center gap-4"
+                        className="flex flex-wrap items-center justify-center gap-3"
                     >
                         <motion.button
                             whileHover={{ scale: 1.05, y: -2 }}
@@ -86,28 +84,22 @@ export default function HeroSection() {
                     </motion.div>
                 </motion.div>
 
-                {/* Right — Illustration (Shifted Higher) */}
+                {/* Illustration — order-1 on mobile (top), order-2 on desktop (right) */}
                 <motion.div
-                    initial={reduceMotion ? {} : { opacity: 0, scale: 0.92 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    initial={reduceMotion ? {} : { opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ ...enterTransition, delay: 0.3 }}
-                    className="flex-1 flex justify-center lg:justify-end mt-4 lg:mt-6"
+                    className="order-1 lg:order-2 flex justify-center lg:flex-1 lg:justify-end"
                 >
-                    <motion.div
-                        className="relative w-full max-w-lg"
-                        animate={reduceMotion ? {} : {
-                            y: [0, -20, 0],
-                            x: [0, 10, -5, 0],
-                            rotate: [0, 2, -1, 0]
-                        }}
-                        transition={{
-                            duration: 6,
-                            repeat: Infinity,
-                            ease: "easeInOut",
+                    <div
+                        className="relative w-full max-w-[220px] lg:max-w-lg"
+                        style={{
+                            animation: reduceMotion ? 'none' : 'heroFloat 6s ease-in-out infinite',
+                            willChange: 'transform',
                         }}
                     >
                         {/* Glow behind image */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-[#4a7c59]/10 to-[#d4a96a]/10 rounded-3xl blur-3xl scale-110" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#4a7c59]/10 to-[#d4a96a]/10 rounded-3xl blur-2xl scale-110" />
                         <img
                             src="/hero-illustration.png"
                             alt="Ilustración de Ocaña: torre histórica con pins de ubicación representando el sistema de información geográfica"
@@ -115,48 +107,29 @@ export default function HeroSection() {
                             loading="lazy"
                         />
 
-                        {/* Pulsing pin overlays */}
-                        <motion.div
+                        {/* Pulsing pin overlays — CSS only */}
+                        <div
                             className="absolute top-[15%] right-[10%] w-4 h-4 rounded-full bg-[#4a7c59]/60"
-                            animate={reduceMotion ? {} : { scale: [1, 1.6, 1], opacity: [0.6, 0, 0.6] }}
-                            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                            style={{ animation: reduceMotion ? 'none' : 'pinPulse 1.5s ease-in-out infinite' }}
                         />
-                        <motion.div
+                        <div
                             className="absolute bottom-[30%] left-[5%] w-3 h-3 rounded-full bg-[#d4a96a]/60"
-                            animate={reduceMotion ? {} : { scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                            style={{ animation: reduceMotion ? 'none' : 'pinPulse 2s ease-in-out 0.5s infinite' }}
                         />
-                    </motion.div>
+                    </div>
                 </motion.div>
             </div>
 
-            {/* Scroll Indicator */}
-            <motion.div
-                animate={reduceMotion ? {} : {
-                    y: [0, 8, 0],
-                }}
-                transition={{
-                    duration: 1.2,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                }}
-                className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10"
+            {/* Scroll Indicator — hidden on mobile */}
+            <div
+                className="hidden sm:block absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10"
+                style={{ animation: reduceMotion ? 'none' : 'scrollBounce 1.2s ease-in-out infinite' }}
             >
-                <motion.div
-                    animate={reduceMotion ? {} : {
-                        opacity: [1, 0.5, 1],
-                    }}
-                    transition={{
-                        duration: 1.2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                    }}
-                    className="flex flex-col items-center gap-2"
-                >
+                <div className="flex flex-col items-center gap-2">
                     <span className="text-xs font-semibold text-[#6b5b4e] uppercase tracking-wider">Desplázate</span>
                     <ChevronDown className="w-5 h-5 text-[#4a7c59]" />
-                </motion.div>
-            </motion.div>
+                </div>
+            </div>
         </section>
     );
 }

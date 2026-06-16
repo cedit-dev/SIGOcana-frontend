@@ -62,19 +62,20 @@ const BlurText: React.FC<BlurTextProps> = ({
     return () => observer.disconnect();
   }, [threshold, rootMargin]);
 
+  // Removed blur filter from default animations — opacity + translate only
   const defaultFrom = useMemo(
     () =>
       direction === 'top'
-        ? { filter: 'blur(8px)', opacity: 0, y: -40 }
-        : { filter: 'blur(8px)', opacity: 0, y: 40 },
+        ? { opacity: 0, y: -30 }
+        : { opacity: 0, y: 30 },
     [direction]
   );
 
   const defaultTo = useMemo(
     () => [
-      { filter: 'blur(0px)', opacity: 1, y: 0 }
+      { opacity: 1, y: 0 }
     ],
-    [direction]
+    []
   );
 
   const fromSnapshot = animationFrom ?? defaultFrom;
@@ -102,10 +103,8 @@ const BlurText: React.FC<BlurTextProps> = ({
             initial={fromSnapshot}
             animate={inView ? animateKeyframes : fromSnapshot}
             transition={spanTransition}
-            onAnimationComplete={index === elements.length - 1 ? onAnimationComplete : undefined}
             style={{
               display: 'inline-block',
-              willChange: 'transform, filter, opacity'
             }}
           >
             {segment === ' ' ? '\u00A0' : segment}
